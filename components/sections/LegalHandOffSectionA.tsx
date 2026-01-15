@@ -89,7 +89,7 @@ export default function LegalHandOffSectionA() {
               <motion.h2
                 id="legal-handoff-a"
                 variants={itemVariants}
-                className="font-display font-black text-4xl md:text-5xl lg:text-6xl leading-[1.05] tracking-tight text-white mb-6"
+                className="font-display font-black text-4xl md:text-5xl lg:text-6xl leading-[1.05] tracking-tight text-white"
               >
                 From verified delivery to{" "}
                 <AccentHighlight mode="inView" delay={0.4}>
@@ -97,32 +97,6 @@ export default function LegalHandOffSectionA() {
                 </AccentHighlight>
                 .
               </motion.h2>
-
-              {/* CTA Buttons */}
-              <motion.div variants={itemVariants} className="flex flex-wrap gap-3">
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={cn(
-                    "inline-flex items-center justify-center px-7 py-3.5 rounded-full",
-                    "bg-[#D6FF0A] text-[#1A1A1A] font-bold text-sm tracking-wide uppercase",
-                    "transition-all hover:bg-[#e5ff4d]"
-                  )}
-                >
-                  See Proof of Understanding
-                </motion.button>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className={cn(
-                    "inline-flex items-center justify-center px-7 py-3.5 rounded-full",
-                    "border border-white/30 text-white font-bold text-sm tracking-wide uppercase",
-                    "backdrop-blur-sm hover:bg-white/10 transition-all"
-                  )}
-                >
-                  How it works
-                </motion.button>
-              </motion.div>
             </motion.div>
           </div>
         </div>
@@ -134,6 +108,38 @@ export default function LegalHandOffSectionA() {
           CYA ≠ proof.
         </span>
       </div>
+
+      {/* CTA Buttons - Bottom Right */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6, delay: 0.5 }}
+        className="absolute bottom-6 right-6 z-20 flex flex-wrap gap-3"
+      >
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={cn(
+            "inline-flex items-center justify-center px-7 py-3.5 rounded-full",
+            "bg-[#D6FF0A] text-[#1A1A1A] font-bold text-sm tracking-wide uppercase",
+            "transition-all hover:bg-[#e5ff4d]"
+          )}
+        >
+          See Proof of Understanding
+        </motion.button>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          className={cn(
+            "inline-flex items-center justify-center px-7 py-3.5 rounded-full",
+            "border border-white/30 text-white font-bold text-sm tracking-wide uppercase",
+            "backdrop-blur-sm hover:bg-white/10 transition-all"
+          )}
+        >
+          How it works
+        </motion.button>
+      </motion.div>
     </section>
   );
 }
