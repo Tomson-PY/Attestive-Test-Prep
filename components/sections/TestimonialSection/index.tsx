@@ -13,9 +13,8 @@ import { cn } from "@/lib/utils";
 import { testimonials, Testimonial } from "./testimonialData";
 import { TestimonialCard } from "./TestimonialCard";
 
-// Row configuration for different speeds and directions (2 rows)
+// Single row configuration (left to right)
 const rowConfigs = [
-  { direction: "left", duration: 25 },
   { direction: "right", duration: 25 },
 ];
 
@@ -224,17 +223,15 @@ export function TestimonialSection() {
   // Section fade-in
   const opacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
 
-  // Per-row parallax (different speeds for depth)
-  const row0Y = useTransform(scrollYProgress, [0, 1], [30, -15]);
-  const row1Y = useTransform(scrollYProgress, [0, 1], [15, -30]);
+  // Parallax for single row
+  const rowY = useTransform(scrollYProgress, [0, 1], [15, -15]);
 
-  const rowYValues = [row0Y, row1Y];
+  const rowYValues = [rowY];
 
-  // Both rows display all testimonials
+  // Single row displays all testimonials
   const rows = useMemo(
     () => [
-      testimonials, // Top row - all 8 cards
-      testimonials, // Bottom row - all 8 cards
+      testimonials, // All 8 cards
     ],
     []
   );
@@ -271,7 +268,17 @@ export function TestimonialSection() {
         aria-hidden="true"
       />
 
-      {/* Masonry Rows */}
+      {/* Heading */}
+      <motion.div
+        style={{ opacity }}
+        className="max-w-6xl mx-auto px-6 mb-3"
+      >
+        <h2 className="font-display font-black text-2xl sm:text-3xl text-black">
+          Policy Headaches.
+        </h2>
+      </motion.div>
+
+      {/* Marquee Row */}
       <motion.div style={{ opacity }} className="flex flex-col gap-4 sm:gap-5">
         {rows.map((rowCards, rowIndex) => (
           <MarqueeRow
