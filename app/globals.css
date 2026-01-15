@@ -9,8 +9,28 @@
   --color-text-main: #1A1A1A;
   --color-bg-surface: #F8FAFB;
   --color-ink: #202225;
-  
+
   --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-marquee-left: marquee-left linear infinite;
+  --animate-marquee-right: marquee-right linear infinite;
+
+  @keyframes marquee-left {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-33.333%);
+    }
+  }
+
+  @keyframes marquee-right {
+    0% {
+      transform: translateX(-33.333%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
 }
 
 :root {
@@ -43,33 +63,6 @@ h1, h2, h3, h4, h5, h6 {
   height: 100%;
   z-index: 50;
   pointer-events: none;
-}
-
-/* Testimonial marquee animations */
-@keyframes marquee-left {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-33.333%);
-  }
-}
-
-@keyframes marquee-right {
-  0% {
-    transform: translateX(-33.333%);
-  }
-  100% {
-    transform: translateX(0);
-  }
-}
-
-.animate-marquee-left {
-  animation: marquee-left linear infinite;
-}
-
-.animate-marquee-right {
-  animation: marquee-right linear infinite;
 }
 
 /* Reduced motion preference */
