@@ -1,6 +1,7 @@
 import { Header } from "@/components/Header";
 import { HeroAttestiva } from "@/components/HeroAttestiva";
 import { GreenGradientHero } from "@/components/sections/GreenGradientHero";
+import { TestimonialSection } from "@/components/sections/TestimonialSection";
 import LegalHandOffSection from "@/components/sections/LegalHandOffSection";
 import { PoweredByRiata } from "@/components/PoweredByRiata";
 import { FeatureGrid } from "@/components/FeatureGrid";
@@ -15,6 +16,7 @@ export default function Home() {
       <div className="flex-grow">
         <HeroAttestiva />
         <GreenGradientHero />
+        <TestimonialSection />
         <LegalHandOffSection />
         <PoweredByRiata />
         <FeatureGrid />
