@@ -44,7 +44,7 @@ export function GreenGradientHero() {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="font-display font-black text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-tight leading-none text-[#D6FF0A] mb-4"
           >
-            VERIFY UNDERSTANDING
+            UNDERSTANDING IS THE METRIC.
           </motion.h2>
 
           {/* Subheadline */}
@@ -57,6 +57,7 @@ export function GreenGradientHero() {
           >
             Attestiva transforms policies into verified competence with AI-powered assessments.
           </motion.p>
+
         </div>
 
         {/* Phone Image */}
