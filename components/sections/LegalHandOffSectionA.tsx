@@ -28,19 +28,6 @@ const itemVariants = {
   },
 };
 
-const cardVariants = {
-  hidden: { opacity: 0, x: 40 },
-  visible: (i: number) => ({
-    opacity: 1,
-    x: 0,
-    transition: {
-      duration: 0.6,
-      ease: "easeOut" as const,
-      delay: 0.3 + i * 0.15,
-    },
-  }),
-};
-
 export default function LegalHandOffSectionA() {
   return (
     <section
@@ -104,70 +91,12 @@ export default function LegalHandOffSectionA() {
                 variants={itemVariants}
                 className="font-display font-black text-4xl md:text-5xl lg:text-6xl leading-[1.05] tracking-tight text-white mb-6"
               >
-                Is this what you're handing{" "}
+                From verified delivery to{" "}
                 <AccentHighlight mode="inView" delay={0.4}>
-                  Legal
+                  Understood
                 </AccentHighlight>
-                ?
+                .
               </motion.h2>
-
-              {/* Description */}
-              <motion.div variants={itemVariants} className="space-y-4 mb-10">
-                <p className="text-lg md:text-xl text-white/80 leading-relaxed">
-                  A checkbox is comforting. It's also a weak form of evidence when the stakes are real.
-                </p>
-                <p className="text-lg md:text-xl text-white/80 leading-relaxed">
-                  Attestiva turns policies and procedures into verified understanding — not just "read & signed."
-                </p>
-              </motion.div>
-
-              {/* Glassmorphism Comparison Cards */}
-              <div className="space-y-4 mb-10">
-                {/* Checkbox systems card */}
-                <motion.div
-                  custom={0}
-                  variants={cardVariants}
-                  className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-2xl p-6"
-                >
-                  <div className="font-display font-bold text-xs tracking-[0.15em] uppercase text-white/60 mb-4">
-                    Checkbox systems give you
-                  </div>
-                  <ul className="space-y-2">
-                    <li className="font-display font-semibold text-lg text-white/90">
-                      • Proof it was sent
-                    </li>
-                    <li className="font-display font-semibold text-lg text-white/90">
-                      • Proof it was opened
-                    </li>
-                    <li className="font-display font-semibold text-lg text-white/90">
-                      • Proof it was acknowledged
-                    </li>
-                  </ul>
-                </motion.div>
-
-                {/* Attestiva card */}
-                <motion.div
-                  custom={1}
-                  variants={cardVariants}
-                  className="backdrop-blur-xl bg-[#D6FF0A]/10 border border-[#D6FF0A]/30 rounded-2xl p-6 relative overflow-hidden"
-                >
-                  <div className="absolute left-0 top-4 bottom-4 w-1 bg-[#D6FF0A] rounded-full" />
-                  <div className="font-display font-bold text-xs tracking-[0.15em] uppercase text-[#D6FF0A] mb-4 pl-4">
-                    Attestiva gives you
-                  </div>
-                  <ul className="space-y-2 pl-4">
-                    <li className="font-display font-bold text-lg text-white">
-                      • Proof it was understood
-                    </li>
-                    <li className="font-display font-bold text-lg text-white">
-                      • Scenario-based verification
-                    </li>
-                    <li className="font-display font-bold text-lg text-white">
-                      • Targeted follow-up for gaps
-                    </li>
-                  </ul>
-                </motion.div>
-              </div>
 
               {/* CTA Buttons */}
               <motion.div variants={itemVariants} className="flex flex-wrap gap-3">
