@@ -2,7 +2,7 @@ import { Header } from "@/components/Header";
 import { HeroAttestiva } from "@/components/HeroAttestiva";
 import { GreenGradientHero } from "@/components/sections/GreenGradientHero";
 import { TestimonialSection } from "@/components/sections/TestimonialSection";
-import LegalHandOffSection from "@/components/sections/LegalHandOffSection";
+import LegalHandOffSectionA from "@/components/sections/LegalHandOffSectionA";
 import { PoweredByRiata } from "@/components/PoweredByRiata";
 import { FeatureGrid } from "@/components/FeatureGrid";
 import { ValueCarousel } from "@/components/ValueCarousel";
@@ -17,7 +17,7 @@ export default function Home() {
         <HeroAttestiva />
         <TestimonialSection />
         <GreenGradientHero />
-        <LegalHandOffSection />
+        <LegalHandOffSectionA />
         <PoweredByRiata />
         <FeatureGrid />
         <ValueCarousel />
