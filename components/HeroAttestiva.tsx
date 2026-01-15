@@ -46,7 +46,7 @@ export function HeroAttestiva() {
             transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
             className="text-lg md:text-xl text-white/80 mb-12 max-w-2xl leading-relaxed"
           >
-            Transform policies and procedures into measurable competence—with AI-guided explanation, scenario-based verification, and defensible proof at scale.
+Attestiva is compliance SaaS that verifies comprehension—turning policy distribution into measurable, auditable understanding and competency, not just "read and signed."
           </motion.p>
         </div>
       </div>
