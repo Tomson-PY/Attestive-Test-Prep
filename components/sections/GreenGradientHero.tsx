@@ -52,7 +52,7 @@ export function GreenGradientHero() {
               bgColor="#000000"
               textColor="#D6FF0A"
             >
-              COMPREHENSION IS THE METRIC.
+              comprehension is our metric.
             </SequentialHighlight>
           </motion.h2>
 
