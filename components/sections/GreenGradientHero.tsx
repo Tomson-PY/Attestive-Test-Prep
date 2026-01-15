@@ -5,21 +5,22 @@ import Image from "next/image";
 import { useRef } from "react";
 import { ArrowDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { SequentialHighlight } from "@/components/SequentialHighlight";
 
 export function GreenGradientHero() {
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ["start start", "end start"],
+    offset: ["start end", "start start"],
   });
 
-  // Parallax effect for phone image
-  const phoneY = useTransform(scrollYProgress, [0, 1], [0, 100]);
+  // Parallax effect for rising image - completes as you approach the section
+  const phoneY = useTransform(scrollYProgress, [0, 1], [300, 0]);
 
   return (
     <section
       ref={sectionRef}
-      className="relative min-h-[70vh] w-full overflow-hidden"
+      className="relative min-h-[85vh] md:min-h-[90vh] w-full overflow-hidden"
     >
       {/* Background Image */}
       <div className="absolute inset-0">
@@ -33,18 +34,26 @@ export function GreenGradientHero() {
       </div>
 
       {/* Content Container */}
-      <div className="relative z-10 h-full flex flex-col items-center justify-between py-12 md:py-16 px-6">
+      <div className="relative z-10 h-full flex flex-col items-center justify-start py-12 md:py-16 px-6">
         {/* Top Content - Headline & Subheadline */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center">
+        <div className="flex flex-col items-center justify-center text-center mb-8 md:mb-12">
           {/* Headline */}
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.7, ease: "easeOut" }}
-            className="font-display font-black text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-tight leading-none text-[#D6FF0A] mb-4"
+            className="font-display font-black text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl tracking-tight leading-none mb-4"
           >
-            UNDERSTANDING IS THE METRIC.
+            <SequentialHighlight 
+              delay={0.8}
+              wordDuration={0.4}
+              stagger={0.15}
+              bgColor="#000000"
+              textColor="#D6FF0A"
+            >
+              UNDERSTANDING IS THE METRIC.
+            </SequentialHighlight>
           </motion.h2>
 
           {/* Subheadline */}
@@ -60,18 +69,18 @@ export function GreenGradientHero() {
 
         </div>
 
-        {/* Phone Image */}
+        {/* Woman with Binoculars Image */}
         <motion.div
-          className="relative flex-shrink-0 my-4 md:my-0"
+          className="relative flex-shrink-0 mb-8 md:mb-12 z-0"
           style={{ y: phoneY }}
         >
           {/* Entrance animation wrapper */}
           <motion.div
-            initial={{ opacity: 0, y: 100, scale: 0.9 }}
+            initial={{ opacity: 0, y: 200, scale: 0.9 }}
             whileInView={{ opacity: 1, y: 0, scale: 1 }}
-            viewport={{ once: true, amount: 0.3 }}
+            viewport={{ once: true, amount: 0.1 }}
             transition={{
-              duration: 0.8,
+              duration: 1.2,
               ease: [0.23, 1, 0.32, 1],
             }}
           >
@@ -101,11 +110,11 @@ export function GreenGradientHero() {
                 <div className="absolute inset-0 blur-3xl bg-[#D6FF0A]/30 scale-125 rounded-full opacity-60" />
 
                 <Image
-                  src="/images/hand-holding-phone.png"
-                  alt="Hand holding phone showing Attestiva app"
-                  width={400}
-                  height={320}
-                  className="relative z-10 w-[220px] sm:w-[280px] md:w-[340px] lg:w-[400px] h-auto drop-shadow-2xl"
+                  src="/images/woman-binoculars-hero.png"
+                  alt="Woman with binoculars viewing ambulances - clear visibility into competence assessment"
+                  width={700}
+                  height={525}
+                  className="relative z-10 w-[385px] sm:w-[490px] md:w-[595px] lg:w-[700px] h-auto drop-shadow-2xl"
                   priority
                 />
               </motion.div>
@@ -119,7 +128,7 @@ export function GreenGradientHero() {
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.4, ease: "easeOut" }}
-          className="flex flex-col sm:flex-row w-full max-w-2xl gap-0 sm:gap-0"
+          className="flex flex-col sm:flex-row w-full max-w-2xl gap-0 sm:gap-0 relative z-20 mt-auto"
         >
           {/* Primary CTA - See Demo */}
           <motion.button

@@ -47,7 +47,7 @@ function TestimonialCardComponent({
     >
       {/* Quote icon */}
       <Quote
-        className="absolute top-4 right-4 w-8 h-8 text-[var(--color-accent)]/20"
+        className="absolute top-4 right-4 w-8 h-8 text-slate-300"
         aria-hidden="true"
       />
 

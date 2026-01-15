@@ -13,6 +13,14 @@ type AccentHighlightProps = {
    * Delay (seconds) before highlight draws in.
    */
   delay?: number;
+  /**
+   * Custom background color (defaults to accent color)
+   */
+  bgColor?: string;
+  /**
+   * Custom text color (defaults to black)
+   */
+  textColor?: string;
 };
 
 export function AccentHighlight({
@@ -20,6 +28,8 @@ export function AccentHighlight({
   className,
   mode = "animate",
   delay = 1.0,
+  bgColor,
+  textColor,
 }: AccentHighlightProps) {
   const motionProps =
     mode === "inView"
@@ -33,17 +43,28 @@ export function AccentHighlight({
           animate: { scaleX: 1 },
         };
 
+  const backgroundClass = bgColor ? "" : "bg-[var(--color-accent)]";
+  const textClass = textColor ? "" : "text-black";
+
   return (
     <span className={["relative inline-block", className].filter(Boolean).join(" ")}>
-      <span className="relative z-10 text-black px-2">{children}</span>
+      <span 
+        className={`relative z-10 ${textClass} px-2`}
+        style={textColor ? { color: textColor } : undefined}
+      >
+        {children}
+      </span>
       <motion.span
-        className="absolute inset-0 bg-[var(--color-accent)] -skew-x-2"
+        className={`absolute inset-0 ${backgroundClass} -skew-x-2`}
+        style={{ 
+          transformOrigin: "left",
+          ...(bgColor && { backgroundColor: bgColor })
+        }}
         transition={{
           delay,
           duration: 1.6,
           ease: [0.22, 1, 0.36, 1],
         }}
-        style={{ transformOrigin: "left" }}
         {...motionProps}
       />
     </span>

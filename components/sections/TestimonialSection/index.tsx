@@ -15,8 +15,8 @@ import { TestimonialCard } from "./TestimonialCard";
 
 // Row configuration for different speeds and directions (2 rows)
 const rowConfigs = [
-  { direction: "left", duration: 70 },
-  { direction: "right", duration: 60 },
+  { direction: "left", duration: 25 },
+  { direction: "right", duration: 25 },
 ];
 
 interface MarqueeRowProps {
@@ -29,6 +29,32 @@ interface MarqueeRowProps {
   onCardClick: (id: string) => void;
 }
 
+function CardSet({
+  cards,
+  expandedCard,
+  onCardClick,
+  setIndex,
+}: {
+  cards: Testimonial[];
+  expandedCard: string | null;
+  onCardClick: (id: string) => void;
+  setIndex: number;
+}) {
+  return (
+    <div className="flex gap-4 sm:gap-5 flex-shrink-0 pr-4 sm:pr-5">
+      {cards.map((card) => (
+        <TestimonialCard
+          key={`${card.id}-set-${setIndex}`}
+          testimonial={card}
+          isExpanded={expandedCard === card.id}
+          isDimmed={expandedCard !== null && expandedCard !== card.id}
+          onClick={() => onCardClick(card.id)}
+        />
+      ))}
+    </div>
+  );
+}
+
 function MarqueeRow({
   cards,
   direction,
@@ -38,17 +64,11 @@ function MarqueeRow({
   expandedCard,
   onCardClick,
 }: MarqueeRowProps) {
-  // Triple duplicate cards for seamless infinite loop
-  const duplicatedCards = useMemo(
-    () => [...cards, ...cards, ...cards],
-    [cards]
-  );
-
   return (
     <motion.div style={{ y }} className="relative overflow-hidden">
       <div
         className={cn(
-          "flex gap-4 sm:gap-5 w-max",
+          "flex",
           direction === "left" ? "animate-marquee-left" : "animate-marquee-right"
         )}
         style={{
@@ -56,15 +76,10 @@ function MarqueeRow({
           animationPlayState: isPaused ? "paused" : "running",
         }}
       >
-        {duplicatedCards.map((card, index) => (
-          <TestimonialCard
-            key={`${card.id}-${index}`}
-            testimonial={card}
-            isExpanded={expandedCard === card.id}
-            isDimmed={expandedCard !== null && expandedCard !== card.id}
-            onClick={() => onCardClick(card.id)}
-          />
-        ))}
+        {/* Render three identical sets for seamless infinite scroll */}
+        <CardSet cards={cards} expandedCard={expandedCard} onCardClick={onCardClick} setIndex={0} />
+        <CardSet cards={cards} expandedCard={expandedCard} onCardClick={onCardClick} setIndex={1} />
+        <CardSet cards={cards} expandedCard={expandedCard} onCardClick={onCardClick} setIndex={2} />
       </div>
     </motion.div>
   );
@@ -138,7 +153,7 @@ function ExpandedCardOverlay({ card, onClose }: ExpandedCardOverlayProps) {
 
         {/* Large quote icon */}
         <Quote
-          className="absolute top-6 left-8 w-12 h-12 text-[var(--color-accent)]/15"
+          className="absolute top-6 left-8 w-12 h-12 text-slate-300"
           aria-hidden="true"
         />
 
@@ -171,7 +186,7 @@ function ExpandedCardOverlay({ card, onClose }: ExpandedCardOverlayProps) {
           <div
             className={cn(
               "w-14 h-14 rounded-full flex-shrink-0",
-              "bg-gradient-to-br from-[var(--color-accent)] to-[var(--color-accent-2)]",
+              "bg-gradient-to-br from-slate-100 to-slate-300",
               "flex items-center justify-center",
               "text-[var(--color-text-main)] font-display font-bold text-lg"
             )}
@@ -215,11 +230,11 @@ export function TestimonialSection() {
 
   const rowYValues = [row0Y, row1Y];
 
-  // Group testimonials by row (2 rows)
+  // Both rows display all testimonials
   const rows = useMemo(
     () => [
-      testimonials.filter((t) => t.row === 0),
-      testimonials.filter((t) => t.row === 1),
+      testimonials, // Top row - all 8 cards
+      testimonials, // Bottom row - all 8 cards
     ],
     []
   );
@@ -244,7 +259,7 @@ export function TestimonialSection() {
     <section
       ref={sectionRef}
       aria-label="Customer testimonials"
-      className="relative py-16 sm:py-20 md:py-28 overflow-hidden bg-gradient-to-b from-white via-slate-50/50 to-white"
+      className="relative py-4 sm:py-6 md:py-8 overflow-hidden bg-gradient-to-b from-white via-slate-50/50 to-white"
     >
       {/* Subtle background pattern */}
       <div
@@ -255,31 +270,6 @@ export function TestimonialSection() {
         }}
         aria-hidden="true"
       />
-
-      {/* Section Header */}
-      <motion.div
-        style={{ opacity }}
-        className="max-w-6xl mx-auto px-6 mb-10 sm:mb-14 text-center"
-      >
-        <motion.span
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="inline-block text-xs font-semibold tracking-widest uppercase text-slate-500 mb-4"
-        >
-          The Compliance Pain
-        </motion.span>
-        <motion.h2
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.1 }}
-          className="font-display font-extrabold text-3xl sm:text-4xl lg:text-5xl text-[var(--color-text-main)]"
-        >
-          Sound familiar?
-        </motion.h2>
-      </motion.div>
 
       {/* Masonry Rows */}
       <motion.div style={{ opacity }} className="flex flex-col gap-4 sm:gap-5">

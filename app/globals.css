@@ -19,13 +19,13 @@
       transform: translateX(0);
     }
     100% {
-      transform: translateX(-33.333%);
+      transform: translateX(calc(-33.333%));
     }
   }
 
   @keyframes marquee-right {
     0% {
-      transform: translateX(-33.333%);
+      transform: translateX(calc(-33.333%));
     }
     100% {
       transform: translateX(0);

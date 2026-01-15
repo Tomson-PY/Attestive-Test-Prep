@@ -15,8 +15,8 @@ export default function Home() {
       <Header transparent />
       <div className="flex-grow">
         <HeroAttestiva />
-        <GreenGradientHero />
         <TestimonialSection />
+        <GreenGradientHero />
         <LegalHandOffSection />
         <PoweredByRiata />
         <FeatureGrid />
