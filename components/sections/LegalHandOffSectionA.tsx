@@ -1,6 +1,7 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { AccentHighlight } from "@/components/AccentHighlight";
@@ -30,8 +31,18 @@ const itemVariants = {
 };
 
 export default function LegalHandOffSectionA() {
+  const sectionRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start end", "end start"],
+  });
+
+  // CYA rises from bottom to center as user scrolls
+  const cyaY = useTransform(scrollYProgress, [0, 0.6], [1000, 0]);
+
   return (
     <section
+      ref={sectionRef}
       aria-labelledby="legal-handoff-a"
       className="relative min-h-[90vh] w-full overflow-hidden"
     >
@@ -53,11 +64,8 @@ export default function LegalHandOffSectionA() {
       {/* Giant CYA Watermark */}
       <div className="absolute inset-0 flex items-center justify-start pointer-events-none">
         <motion.span
-          initial={{ opacity: 0, x: -100 }}
-          whileInView={{ opacity: 0.08, x: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
-          className="font-display font-black text-[200px] sm:text-[280px] md:text-[360px] lg:text-[420px] text-white leading-none tracking-tighter select-none -ml-4 sm:-ml-8"
+          style={{ y: cyaY }}
+          className="font-display font-black text-[200px] sm:text-[280px] md:text-[360px] lg:text-[420px] text-white/[0.08] leading-none tracking-tighter select-none -ml-4 sm:-ml-8"
         >
           CYA
         </motion.span>
