@@ -51,3 +51,11 @@ Use the `cn()` function from `lib/utils.ts` for merging Tailwind classes:
 import { cn } from "@/lib/utils";
 cn("base-class", conditional && "conditional-class")
 ```
+
+### Mobile Responsiveness
+When making UI changes, always consider mobile view:
+- Primary breakpoint: `md:` (768px) - mobile menu shows below this
+- Use responsive prefixes: `sm:`, `md:`, `lg:`, `xl:`
+- Header has a hamburger menu for mobile (`components/Header.tsx`)
+- Test layouts at 375px width (iPhone) and 768px+ (desktop)
+- Ensure touch targets are at least 44px for mobile
