@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { AccentHighlight } from "@/components/AccentHighlight";
+import { AttestivaLogo } from "@/components/AttestivaLogo";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -62,6 +63,19 @@ export default function LegalHandOffSectionA() {
         </motion.span>
       </div>
 
+      {/* Top Heading */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+        className="absolute top-12 md:top-16 left-0 right-0 z-20 text-center px-6"
+      >
+        <h3 className="font-display font-black text-3xl md:text-4xl lg:text-5xl text-white tracking-tight drop-shadow-lg">
+          What's your Compliance Posture?
+        </h3>
+      </motion.div>
+
       {/* Content */}
       <div className="relative z-10 h-full min-h-[90vh] flex items-center">
         <div className="w-full max-w-7xl mx-auto px-6 md:px-12 py-16 md:py-24">
@@ -77,13 +91,13 @@ export default function LegalHandOffSectionA() {
               viewport={{ once: true, amount: 0.3 }}
               className="lg:max-w-xl"
             >
-              {/* Eyebrow */}
-              <motion.span
+              {/* Logo */}
+              <motion.div
                 variants={itemVariants}
-                className="inline-block text-xs font-bold tracking-[0.2em] uppercase text-[#D6FF0A] mb-4"
+                className="mb-4"
               >
-                Compliance Theater
-              </motion.span>
+                <AttestivaLogo className="text-2xl md:text-3xl font-display font-black text-white" />
+              </motion.div>
 
               {/* Headline */}
               <motion.h2
