@@ -15,7 +15,7 @@ export function GreenGradientHero() {
   });
 
   // Parallax effect for rising image - rises during approach, then stays anchored
-  const phoneY = useTransform(scrollYProgress, [0, 0.4, 1], [300, 60, 60]);
+  const phoneY = useTransform(scrollYProgress, [0, 0.4, 1], [300, 69, 69]);
 
   return (
     <section
