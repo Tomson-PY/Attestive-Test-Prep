@@ -11,11 +11,11 @@ export function GreenGradientHero() {
   const sectionRef = useRef<HTMLElement>(null);
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ["start end", "start start"],
+    offset: ["start end", "end start"],
   });
 
-  // Parallax effect for rising image - completes as you approach the section
-  const phoneY = useTransform(scrollYProgress, [0, 1], [300, 0]);
+  // Parallax effect for rising image - rises during approach, then stays anchored
+  const phoneY = useTransform(scrollYProgress, [0, 0.4, 1], [300, 60, 60]);
 
   return (
     <section
