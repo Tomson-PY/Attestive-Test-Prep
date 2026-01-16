@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { getResponsiveBackgroundClasses } from "@/lib/responsiveBackground";
 import { AccentHighlight } from "@/components/AccentHighlight";
 import { AttestivaLogo } from "@/components/AttestivaLogo";
 
@@ -53,7 +54,7 @@ export default function LegalHandOffSectionA() {
           alt="Man holding a pillow with a checkbox symbol — representing checkbox compliance."
           fill
           sizes="100vw"
-          className="object-cover"
+          className={getResponsiveBackgroundClasses("rightFocused")}
           priority
         />
         {/* Gradient overlay for text readability */}
