@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { AccentHighlight } from "@/components/AccentHighlight";
+import { AttestivaLogo } from "@/components/AttestivaLogo";
 
 export function HeroAttestiva() {
   return (
@@ -46,7 +47,7 @@ export function HeroAttestiva() {
             transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
             className="text-lg md:text-xl text-white/80 mb-12 max-w-2xl leading-relaxed"
           >
-Attestiva is compliance SaaS that verifies comprehension—turning policy distribution into measurable, auditable understanding and competency, not just "read and signed."
+            <AttestivaLogo className="text-[1.1em] text-white/80" /> is compliance layer that verifies comprehension—turning policy distribution into measurable, auditable understanding and competency, not just "read & acknowledged receipt."
           </motion.p>
         </div>
       </div>
