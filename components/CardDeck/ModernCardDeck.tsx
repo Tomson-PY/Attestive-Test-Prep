@@ -4,12 +4,14 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CARD_DATA } from "./cardData";
 import { cn } from "@/lib/utils";
-import { ArrowRight, ArrowLeft, Sparkles, CheckCircle2, MessageCircle } from "lucide-react";
+import { ArrowRight, ArrowLeft, CheckCircle2, MessageCircle } from "lucide-react";
 import Link from "next/link";
 
 export function ModernCardDeck() {
+  const [isRevealed, setIsRevealed] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
+  const [isInitialReveal, setIsInitialReveal] = useState(false);
 
   const handleNext = useCallback(() => {
     if (currentIndex < CARD_DATA.length - 1) {
@@ -29,6 +31,14 @@ export function ModernCardDeck() {
     setDirection(index > currentIndex ? 1 : -1);
     setCurrentIndex(index);
   }, [currentIndex]);
+
+  // Handle initial reveal animation
+  const handleReveal = useCallback(() => {
+    setIsRevealed(true);
+    setIsInitialReveal(true);
+    // Reset initial reveal flag after animation completes
+    setTimeout(() => setIsInitialReveal(false), 800);
+  }, []);
 
   const currentCard = CARD_DATA[currentIndex];
 
@@ -91,6 +101,47 @@ export function ModernCardDeck() {
     },
   };
 
+  // If not revealed, show the initial button
+  if (!isRevealed) {
+    return (
+      <div className="w-full max-w-lg mx-auto flex items-center justify-center min-h-[300px]">
+        <motion.button
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
+          whileHover={{ 
+            scale: 1.05,
+            boxShadow: "0 20px 40px rgba(214, 255, 10, 0.4)"
+          }}
+          whileTap={{ scale: 0.98 }}
+          onClick={handleReveal}
+          className={cn(
+            "px-8 py-4 rounded-xl",
+            "bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-2)]",
+            "text-[var(--color-text-main)] font-display font-bold text-lg sm:text-xl",
+            "shadow-lg shadow-[var(--color-accent)]/30",
+            "transition-all duration-300",
+            "relative overflow-hidden group"
+          )}
+        >
+          {/* Animated shine effect */}
+          <motion.span
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+            initial={{ x: "-100%" }}
+            animate={{ x: "100%" }}
+            transition={{ 
+              duration: 2, 
+              repeat: Infinity, 
+              repeatDelay: 1,
+              ease: "easeInOut" 
+            }}
+          />
+          <span className="relative z-10">What is Riata?</span>
+        </motion.button>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full max-w-lg mx-auto">
       {/* Main Card Container */}
@@ -125,9 +176,14 @@ export function ModernCardDeck() {
               key={currentIndex}
               custom={direction}
               variants={cardVariants}
-              initial="enter"
+              initial={currentIndex === 0 && isInitialReveal ? { opacity: 0, scale: 0.8, y: 50 } : "enter"}
               animate="center"
               exit="exit"
+              transition={currentIndex === 0 && isInitialReveal ? { 
+                duration: 0.6, 
+                ease: [0.23, 1, 0.32, 1],
+                delay: 0.2 
+              } : undefined}
               className={cn(
                 "relative z-10",
                 "bg-white/90 backdrop-blur-xl",
@@ -144,14 +200,9 @@ export function ModernCardDeck() {
               <div className="p-8 sm:p-10">
                 {/* Card Number Badge */}
                 <div className="flex items-center justify-between mb-8">
-                  <div className="flex items-center gap-2">
-                    <div className="w-10 h-10 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 text-[var(--color-accent)]" />
-                    </div>
-                    <span className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
-                      Step {String(currentIndex + 1).padStart(2, "0")}
-                    </span>
-                  </div>
+                  <span className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
+                    Step {String(currentIndex + 1).padStart(2, "0")}
+                  </span>
                   
                   {/* Progress dots */}
                   <div className="flex items-center gap-1.5">
