@@ -78,13 +78,20 @@ function formatPrice(amount: number): string {
   }).format(amount);
 }
 
-function getDisplayPrice(annualPrice: number, isAnnual: boolean): string {
-  if (isAnnual) {
-    return formatPrice(annualPrice);
-  }
-  // Monthly = (annual * 1.1) / 12
-  const monthlyPrice = Math.round((annualPrice * 1.1) / 12);
-  return formatPrice(monthlyPrice);
+function getMonthlyPrice(annualPrice: number): number {
+  // Monthly without discount = (annual * 1.1) / 12
+  return Math.round((annualPrice * 1.1) / 12);
+}
+
+function getAnnualMonthlyPrice(annualPrice: number): number {
+  // Monthly with annual discount = annual / 12 (rounded up for clean display)
+  return Math.ceil(annualPrice / 12);
+}
+
+function getSavingsAmount(annualPrice: number): number {
+  const monthlyPrice = getMonthlyPrice(annualPrice);
+  const annualMonthlyPrice = Math.round(annualPrice / 12);
+  return (monthlyPrice - annualMonthlyPrice) * 12;
 }
 
 export function PricingSection() {
@@ -159,12 +166,21 @@ export function PricingSection() {
               <div className="mb-2">
                 <div className="flex items-baseline gap-2">
                   <span className={`font-display font-extrabold text-4xl ${tier.highlighted ? "text-white" : "text-[var(--text-main)]"}`}>
-                    {getDisplayPrice(tier.annualPrice, isAnnual)}
+                    {isAnnual 
+                      ? formatPrice(getAnnualMonthlyPrice(tier.annualPrice))
+                      : formatPrice(getMonthlyPrice(tier.annualPrice))
+                    }
                   </span>
                   <span className={`text-sm ${tier.highlighted ? "text-white/70" : "text-[var(--text-main)]/60"}`}>
-                    {isAnnual ? "per year" : "per month"}
+                    per month
                   </span>
                 </div>
+                {isAnnual && (
+                  <div className={`text-sm mt-1 ${tier.highlighted ? "text-[var(--color-accent)]" : "text-[var(--color-accent-2)]"}`}>
+                    <span className="line-through opacity-60">{formatPrice(getMonthlyPrice(tier.annualPrice))}/mo</span>
+                    <span className="ml-2 font-semibold">Save {formatPrice(getSavingsAmount(tier.annualPrice))}/year</span>
+                  </div>
+                )}
               </div>
 
               <div className={`text-sm font-semibold mb-6 ${tier.highlighted ? "text-white" : "text-[var(--text-main)]"}`}>

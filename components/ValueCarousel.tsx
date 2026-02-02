@@ -218,14 +218,16 @@ export function ValueCarousel() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
   const isTitleInView = useInView(sectionRef, { once: true, margin: "-100px" });
-  
-  // Parallax on scroll
+
+  // Parallax on scroll - subtle horizontal shift as user scrolls
   const { scrollYProgress } = useScroll({
-    target: containerRef,
+    target: sectionRef,
     offset: ["start end", "end start"]
   });
 
-  const x = useTransform(scrollYProgress, [0, 1], ["0%", "-8%"]);
+  // Animation: shifts from right to left as user scrolls
+  // At scrollYProgress 0.5 (section centered), x = 0 (cards centered)
+  const x = useTransform(scrollYProgress, [0, 0.5, 1], [100, 0, -100]);
 
   return (
     <section ref={sectionRef} className="py-24 overflow-hidden bg-[var(--bg-surface)] relative">
@@ -246,47 +248,49 @@ export function ValueCarousel() {
       />
       
       <div className="max-w-screen-xl mx-auto px-6 mb-12">
-        {/* Title with typewriter-like reveal */}
-        <motion.h2 
-          className="font-display font-bold text-3xl md:text-4xl text-[var(--text-main)]"
-        >
-          {"Proof of Understanding Across Industries".split("").map((char, i) => (
+        <div className="text-center max-w-2xl mx-auto">
+          {/* Title with typewriter-like reveal */}
+          <motion.h2
+            className="font-display font-bold text-3xl md:text-4xl text-[var(--text-main)]"
+          >
+            {"Proof of Understanding Across Industries".split("").map((char, i) => (
+              <motion.span
+                key={i}
+                initial={{ opacity: 0 }}
+                animate={isTitleInView ? { opacity: 1 } : {}}
+                transition={{
+                  duration: 0.05,
+                  delay: i * 0.02,
+                  ease: "linear"
+                }}
+              >
+                {char}
+              </motion.span>
+            ))}
+            {/* Blinking cursor */}
             <motion.span
-              key={i}
-              initial={{ opacity: 0 }}
-              animate={isTitleInView ? { opacity: 1 } : {}}
-              transition={{
-                duration: 0.05,
-                delay: i * 0.02,
-                ease: "linear"
-              }}
-            >
-              {char}
-            </motion.span>
-          ))}
-          {/* Blinking cursor */}
-          <motion.span
-            className="inline-block w-[3px] h-[1em] bg-[var(--color-accent)] ml-1 align-middle"
-            animate={{ opacity: [1, 0, 1] }}
-            transition={{ duration: 0.8, repeat: Infinity }}
-          />
-        </motion.h2>
-        
-        {/* Subtitle fade in */}
-        <motion.p
-          className="mt-4 text-[var(--text-main)]/60 text-lg max-w-2xl"
-          initial={{ opacity: 0, y: 10 }}
-          animate={isTitleInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ delay: 0.8, duration: 0.5 }}
-        >
-          Explore how Attestiva transforms compliance across different sectors
-        </motion.p>
+              className="inline-block w-[3px] h-[1em] bg-[var(--color-accent)] ml-1 align-middle"
+              animate={{ opacity: [1, 0, 1] }}
+              transition={{ duration: 0.8, repeat: Infinity }}
+            />
+          </motion.h2>
+
+          {/* Subtitle fade in */}
+          <motion.p
+            className="mt-4 text-[var(--text-main)]/60 text-lg"
+            initial={{ opacity: 0, y: 10 }}
+            animate={isTitleInView ? { opacity: 1, y: 0 } : {}}
+            transition={{ delay: 0.8, duration: 0.5 }}
+          >
+            Explore how Attestiva transforms compliance across different sectors
+          </motion.p>
+        </div>
       </div>
 
-      {/* Horizontal Scroll Container */}
+      {/* Horizontal Scroll Container - centered with overflow visible */}
       <div ref={containerRef} className="relative w-full overflow-x-auto pb-8 hide-scrollbar">
         <motion.div
-          className="flex gap-6 pl-16 pr-6 w-max items-center"
+          className="flex gap-6 w-max items-center mx-auto"
           style={{ x }}
         >
           {industryProps.map((item, i) => (
