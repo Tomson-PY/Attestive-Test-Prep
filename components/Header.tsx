@@ -23,6 +23,9 @@ interface NavLinkProps {
 const MotionLink = motion.create(Link);
 
 function NavLink({ href, children, transparent, isActive }: NavLinkProps) {
+  // Calculate the default text color based on state
+  const defaultColor = isActive ? "#000000" : transparent ? "rgba(255,255,255,0.9)" : "#000000";
+
   return (
     <MotionLink
       href={href}
@@ -35,11 +38,8 @@ function NavLink({ href, children, transparent, isActive }: NavLinkProps) {
           "relative z-10 px-2",
           isActive && "text-black"
         )}
-        animate="idle"
-        variants={{
-          idle: { color: isActive ? "#000000" : transparent ? "rgba(255,255,255,0.9)" : "#000000" },
-          hover: { color: "#000000" },
-        }}
+        animate={{ color: defaultColor }}
+        whileHover={{ color: "#000000" }}
         transition={{ duration: 0.2 }}
       >
         {children}
@@ -142,9 +142,9 @@ function MobileMenu({ isOpen, onClose, transparent, currentPath }: MobileMenuPro
   }, [isOpen, onClose]);
 
   const navLinks = [
-    { href: "#features", label: "Features" },
-    { href: "#how-it-works", label: "How it Works" },
-    { href: "#pricing", label: "Pricing" },
+    { href: "/#features", label: "Features" },
+    { href: "/#how-it-works", label: "How it Works" },
+    { href: "/#pricing", label: "Pricing" },
     { href: "/contact", label: "Contact Us" },
   ];
 
@@ -263,9 +263,9 @@ export function Header({ transparent = false }: HeaderProps) {
   }, []);
 
   const navLinks = [
-    { href: "#features", label: "Features" },
-    { href: "#how-it-works", label: "How it Works" },
-    { href: "#pricing", label: "Pricing" },
+    { href: "/#features", label: "Features" },
+    { href: "/#how-it-works", label: "How it Works" },
+    { href: "/#pricing", label: "Pricing" },
     { href: "/contact", label: "Contact Us" },
   ];
 
