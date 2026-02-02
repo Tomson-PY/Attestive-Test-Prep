@@ -231,7 +231,7 @@ export function FeatureGrid() {
             animate={isTitleInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.5, ease: [0.23, 1, 0.32, 1] }}
           >
-            Close the gap between "I saw it" and "I can do it" with AI-powered verification.
+            Close the gap between &quot;I saw it&quot; and &quot;I can do it&quot; with AI-powered verification.
           </motion.p>
         </div>
         

@@ -37,12 +37,15 @@ export function LineByLineText({
 }: LineByLineTextProps) {
   const [visibleLines, setVisibleLines] = useState(0);
 
-  const memoizedOnComplete = useCallback(onComplete, [onComplete]);
+  const memoizedOnComplete = useCallback(() => onComplete(), [onComplete]);
 
   useEffect(() => {
     if (!isActive) {
-      setVisibleLines(0);
-      return;
+      // Use requestAnimationFrame to avoid synchronous setState in effect
+      const rafId = requestAnimationFrame(() => {
+        setVisibleLines(0);
+      });
+      return () => cancelAnimationFrame(rafId);
     }
 
     let timeout: NodeJS.Timeout;

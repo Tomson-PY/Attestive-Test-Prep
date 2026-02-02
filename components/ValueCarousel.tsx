@@ -286,7 +286,7 @@ export function ValueCarousel() {
       {/* Horizontal Scroll Container */}
       <div ref={containerRef} className="relative w-full overflow-x-auto pb-8 hide-scrollbar">
         <motion.div
-          className="flex gap-6 px-6 w-max items-center"
+          className="flex gap-6 pl-16 pr-6 w-max items-center"
           style={{ x }}
         >
           {industryProps.map((item, i) => (

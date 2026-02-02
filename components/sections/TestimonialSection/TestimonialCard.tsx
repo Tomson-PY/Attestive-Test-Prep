@@ -21,10 +21,12 @@ const cardHeights: Record<number, string> = {
 
 function TestimonialCardComponent({
   testimonial,
-  isExpanded,
+  isExpanded: _isExpanded,
   isDimmed,
   onClick,
 }: TestimonialCardProps) {
+  // _isExpanded is used by parent component for expanded state logic
+  void _isExpanded;
   const { id, name, role, industry, beforePhrase, boldedPhrase, afterPhrase, row } = testimonial;
 
   return (

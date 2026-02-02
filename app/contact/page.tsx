@@ -65,7 +65,7 @@ export default function ContactPage() {
               transition={{ duration: 0.7, ease: [0.23, 1, 0.32, 1] }}
             >
               <h1 className="font-display font-extrabold text-4xl md:text-5xl lg:text-6xl tracking-tight leading-tight text-[var(--color-text-main)] mb-6">
-                Let's start a{" "}
+                Let&apos;s start a{" "}
                 <span className="relative inline-block">
                   <span className="relative z-10">conversation</span>
                   <motion.span
@@ -85,7 +85,7 @@ export default function ContactPage() {
               </h1>
               
               <p className="text-lg text-[var(--text-main)]/70 leading-relaxed mb-8 max-w-md">
-                Ready to transform your compliance training? We'd love to hear from you. 
+                Ready to transform your compliance training? We&apos;d love to hear from you. 
                 Fill out the form and our team will get back to you within 24 hours.
               </p>
 
@@ -290,7 +290,7 @@ export default function ContactPage() {
                         Message sent!
                       </h3>
                       <p className="text-[var(--text-main)]/60 mb-8">
-                        Thanks for reaching out. We'll get back to you within 24 hours.
+                        Thanks for reaching out. We&apos;ll get back to you within 24 hours.
                       </p>
                       <Link
                         href="/"

@@ -125,7 +125,7 @@ export default function LegalHandOffSection() {
               variants={itemVariants}
               className="font-display font-extrabold text-3xl md:text-4xl lg:text-[44px] leading-tight tracking-tight text-[var(--color-text-main)] mb-5"
             >
-              Is this what you're handing{" "}
+              Is this what you&apos;re handing{" "}
               <AccentHighlight mode="inView" delay={0.15}>
                 Legal
               </AccentHighlight>
@@ -134,10 +134,10 @@ export default function LegalHandOffSection() {
 
             <motion.div variants={itemVariants} className="space-y-4 mb-8">
               <p className="text-lg md:text-xl text-slate-600 leading-relaxed max-w-[52ch]">
-                A checkbox is comforting. It's also a weak form of evidence when the stakes are real.
+                A checkbox is comforting. It&apos;s also a weak form of evidence when the stakes are real.
               </p>
               <p className="text-lg md:text-xl text-slate-600 leading-relaxed max-w-[52ch]">
-                Attestiva turns policies and procedures into verified understanding — not just "read & signed."
+                Attestiva turns policies and procedures into verified understanding — not just &quot;read & signed.&quot;
               </p>
             </motion.div>
 

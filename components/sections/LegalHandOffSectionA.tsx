@@ -81,7 +81,7 @@ export default function LegalHandOffSectionA() {
         className="absolute top-12 md:top-16 left-0 right-0 z-20 text-center px-6"
       >
         <h3 className="font-display font-black text-3xl md:text-4xl lg:text-5xl text-white tracking-tight drop-shadow-lg">
-          What's your Compliance Posture?
+          What&apos;s your Compliance Posture?
         </h3>
       </motion.div>
 
