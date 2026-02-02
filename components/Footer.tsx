@@ -1,4 +1,49 @@
+"use client";
+
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { cn } from "@/lib/utils";
+
+const MotionLink = motion.create(Link);
+
+interface FooterNavLinkProps {
+  href: string;
+  children: React.ReactNode;
+}
+
+function FooterNavLink({ href, children }: FooterNavLinkProps) {
+  return (
+    <MotionLink
+      href={href}
+      className="relative inline-block"
+      initial="idle"
+      whileHover="hover"
+    >
+      <motion.span
+        className="relative z-10 px-2"
+        variants={{
+          idle: { color: "rgba(26,26,26,0.8)" },
+          hover: { color: "#000000" },
+        }}
+        transition={{ duration: 0.2 }}
+      >
+        {children}
+      </motion.span>
+      <motion.span
+        className="absolute inset-0 bg-[var(--color-accent)] -skew-x-2"
+        variants={{
+          idle: { scaleX: 0 },
+          hover: { scaleX: 1 },
+        }}
+        transition={{
+          duration: 0.3,
+          ease: [0.22, 1, 0.36, 1],
+        }}
+        style={{ transformOrigin: "left" }}
+      />
+    </MotionLink>
+  );
+}
 
 export function Footer() {
   return (
@@ -11,10 +56,10 @@ export function Footer() {
         <div className="text-sm text-[var(--text-main)]/60">
           © {new Date().getFullYear()} Attestiva. All rights reserved.
         </div>
-        <div className="flex gap-6 text-sm font-medium text-[var(--text-main)]/80">
-          <Link href="#" className="hover:text-[var(--color-accent)] transition-colors">Privacy</Link>
-          <Link href="#" className="hover:text-[var(--color-accent)] transition-colors">Terms</Link>
-          <Link href="#" className="hover:text-[var(--color-accent)] transition-colors">Contact</Link>
+        <div className="flex gap-2 text-sm font-medium">
+          <FooterNavLink href="#">Privacy</FooterNavLink>
+          <FooterNavLink href="#">Terms</FooterNavLink>
+          <FooterNavLink href="/contact">Contact Us</FooterNavLink>
         </div>
       </div>
     </footer>

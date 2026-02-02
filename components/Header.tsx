@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,11 +16,12 @@ interface NavLinkProps {
   href: string;
   children: React.ReactNode;
   transparent?: boolean;
+  isActive?: boolean;
 }
 
 const MotionLink = motion.create(Link);
 
-function NavLink({ href, children, transparent }: NavLinkProps) {
+function NavLink({ href, children, transparent, isActive }: NavLinkProps) {
   return (
     <MotionLink
       href={href}
@@ -28,9 +30,12 @@ function NavLink({ href, children, transparent }: NavLinkProps) {
       whileHover="hover"
     >
       <motion.span
-        className="relative z-10 px-2"
+        className={cn(
+          "relative z-10 px-2",
+          isActive && "text-black"
+        )}
         variants={{
-          idle: { color: transparent ? "rgba(255,255,255,0.9)" : "rgba(26,26,26,0.8)" },
+          idle: { color: isActive ? "#000000" : transparent ? "rgba(255,255,255,0.9)" : "rgba(26,26,26,0.8)" },
           hover: { color: "#000000" },
         }}
         transition={{ duration: 0.2 }}
@@ -40,7 +45,7 @@ function NavLink({ href, children, transparent }: NavLinkProps) {
       <motion.span
         className="absolute inset-0 bg-[var(--color-accent)] -skew-x-2"
         variants={{
-          idle: { scaleX: 0 },
+          idle: { scaleX: isActive ? 1 : 0 },
           hover: { scaleX: 1 },
         }}
         transition={{
@@ -93,6 +98,7 @@ interface MobileMenuProps {
   isOpen: boolean;
   onClose: () => void;
   transparent: boolean;
+  currentPath: string;
 }
 
 const menuContainerVariants = {
@@ -116,7 +122,7 @@ const menuItemVariants = {
   exit: { opacity: 0, x: -10 },
 };
 
-function MobileMenu({ isOpen, onClose, transparent }: MobileMenuProps) {
+function MobileMenu({ isOpen, onClose, transparent, currentPath }: MobileMenuProps) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -137,6 +143,7 @@ function MobileMenu({ isOpen, onClose, transparent }: MobileMenuProps) {
     { href: "#features", label: "Features" },
     { href: "#how-it-works", label: "How it Works" },
     { href: "#pricing", label: "Pricing" },
+    { href: "/contact", label: "Contact Us" },
   ];
 
   return (
@@ -177,22 +184,34 @@ function MobileMenu({ isOpen, onClose, transparent }: MobileMenuProps) {
           >
             {/* Navigation Links */}
             <div className="flex-1">
-              {navLinks.map((link) => (
-                <motion.div key={link.href} variants={menuItemVariants}>
-                  <Link
-                    href={link.href}
-                    onClick={onClose}
-                    className={cn(
-                      "block py-4 text-xl font-medium border-b transition-colors",
-                      transparent
-                        ? "text-white border-white/10 hover:text-[var(--color-accent)]"
-                        : "text-[var(--text-main)] border-black/5 hover:text-[var(--color-accent)]"
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                </motion.div>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = currentPath === link.href;
+                return (
+                  <motion.div key={link.href} variants={menuItemVariants}>
+                    <Link
+                      href={link.href}
+                      onClick={onClose}
+                      className={cn(
+                        "block py-4 text-xl font-medium border-b transition-colors",
+                        transparent
+                          ? "text-white border-white/10 hover:text-[var(--color-accent)]"
+                          : "text-[var(--text-main)] border-black/5 hover:text-[var(--color-accent)]",
+                        isActive && (transparent ? "text-[var(--color-accent)]" : "text-[var(--color-accent)]")
+                      )}
+                    >
+                      <span className="relative">
+                        {link.label}
+                        {isActive && (
+                          <motion.span
+                            layoutId="mobileActiveIndicator"
+                            className="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-[var(--color-accent)]"
+                          />
+                        )}
+                      </span>
+                    </Link>
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* CTA Section */}
@@ -231,10 +250,18 @@ function MobileMenu({ isOpen, onClose, transparent }: MobileMenuProps) {
 
 export function Header({ transparent = false }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const pathname = usePathname();
 
   const handleCloseMenu = useCallback(() => {
     setIsMenuOpen(false);
   }, []);
+
+  const navLinks = [
+    { href: "#features", label: "Features" },
+    { href: "#how-it-works", label: "How it Works" },
+    { href: "#pricing", label: "Pricing" },
+    { href: "/contact", label: "Contact Us" },
+  ];
 
   return (
     <>
@@ -261,9 +288,16 @@ export function Header({ transparent = false }: HeaderProps) {
           "hidden md:flex items-center gap-2 text-sm font-medium",
           transparent ? "text-white/90" : "text-[var(--text-main)]/80"
         )}>
-          <NavLink href="#features" transparent={transparent}>Features</NavLink>
-          <NavLink href="#how-it-works" transparent={transparent}>How it Works</NavLink>
-          <NavLink href="#pricing" transparent={transparent}>Pricing</NavLink>
+          {navLinks.map((link) => (
+            <NavLink 
+              key={link.href} 
+              href={link.href} 
+              transparent={transparent}
+              isActive={pathname === link.href}
+            >
+              {link.label}
+            </NavLink>
+          ))}
         </nav>
 
         <div className="flex items-center gap-4">
@@ -297,6 +331,7 @@ export function Header({ transparent = false }: HeaderProps) {
       isOpen={isMenuOpen}
       onClose={handleCloseMenu}
       transparent={transparent}
+      currentPath={pathname}
     />
     </>
   );
