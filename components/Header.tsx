@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { AttestivaLogo } from "@/components/AttestivaLogo";
+import { useScrolled } from "@/hooks/useScrolled";
 
 interface HeaderProps {
   transparent?: boolean;
@@ -34,8 +35,9 @@ function NavLink({ href, children, transparent, isActive }: NavLinkProps) {
           "relative z-10 px-2",
           isActive && "text-black"
         )}
+        animate="idle"
         variants={{
-          idle: { color: isActive ? "#000000" : transparent ? "rgba(255,255,255,0.9)" : "rgba(26,26,26,0.8)" },
+          idle: { color: isActive ? "#000000" : transparent ? "rgba(255,255,255,0.9)" : "#000000" },
           hover: { color: "#000000" },
         }}
         transition={{ duration: 0.2 }}
@@ -251,6 +253,10 @@ function MobileMenu({ isOpen, onClose, transparent, currentPath }: MobileMenuPro
 export function Header({ transparent = false }: HeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
+  const scrolled = useScrolled(20);
+
+  // Compute effective transparency based on scroll state
+  const isTransparent = transparent && !scrolled;
 
   const handleCloseMenu = useCallback(() => {
     setIsMenuOpen(false);
@@ -266,8 +272,8 @@ export function Header({ transparent = false }: HeaderProps) {
   return (
     <>
     <header className={cn(
-      "absolute top-0 left-0 right-0 z-50 w-full transition-all duration-300",
-      transparent
+      "fixed top-0 left-0 right-0 z-60 w-full transition-all duration-300",
+      isTransparent
         ? "bg-transparent"
         : "backdrop-blur-md bg-[var(--bg-surface)]/80 border-b border-black/5"
     )}>
@@ -277,7 +283,7 @@ export function Header({ transparent = false }: HeaderProps) {
           aria-label="Attestiva"
           className={cn(
           "font-display font-extrabold text-3xl leading-none tracking-tight transition-colors",
-          transparent ? "text-white" : "text-[var(--text-main)]"
+          isTransparent ? "text-white" : "text-[var(--text-main)]"
           )}
         >
           <span className="sr-only">Attestiva</span>
@@ -286,13 +292,13 @@ export function Header({ transparent = false }: HeaderProps) {
 
         <nav className={cn(
           "hidden md:flex items-center gap-2 text-sm font-medium",
-          transparent ? "text-white/90" : "text-[var(--text-main)]/80"
+          isTransparent ? "text-white/90" : "text-black"
         )}>
           {navLinks.map((link) => (
-            <NavLink 
-              key={link.href} 
-              href={link.href} 
-              transparent={transparent}
+            <NavLink
+              key={link.href}
+              href={link.href}
+              transparent={isTransparent}
               isActive={pathname === link.href}
             >
               {link.label}
@@ -303,7 +309,7 @@ export function Header({ transparent = false }: HeaderProps) {
         <div className="flex items-center gap-4">
           <Link href="/login" className={cn(
             "hidden md:block text-sm font-medium transition-colors",
-            transparent ? "text-white hover:text-white/80" : "text-[var(--text-main)] hover:text-[var(--color-ink)]"
+            isTransparent ? "text-white hover:text-white/80" : "text-[var(--text-main)] hover:text-[var(--color-ink)]"
           )}>
             Log in
           </Link>
@@ -311,7 +317,7 @@ export function Header({ transparent = false }: HeaderProps) {
             href="/start"
             className={cn(
               "hidden md:block px-5 py-2.5 rounded-lg text-sm font-semibold transition-all focus:ring-2 focus:ring-offset-2",
-              transparent
+              isTransparent
                 ? "bg-white text-black hover:bg-white/90 focus:ring-white"
                 : "bg-[var(--color-ink)] text-white hover:bg-black/80 focus:ring-[var(--color-ink)]"
             )}
@@ -321,7 +327,7 @@ export function Header({ transparent = false }: HeaderProps) {
           <MobileMenuButton
             isOpen={isMenuOpen}
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            transparent={transparent}
+            transparent={isTransparent}
           />
         </div>
       </div>
@@ -330,7 +336,7 @@ export function Header({ transparent = false }: HeaderProps) {
     <MobileMenu
       isOpen={isMenuOpen}
       onClose={handleCloseMenu}
-      transparent={transparent}
+      transparent={isTransparent}
       currentPath={pathname}
     />
     </>
