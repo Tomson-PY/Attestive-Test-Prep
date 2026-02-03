@@ -91,8 +91,8 @@ function TiltCard({ feature, index }: { feature: typeof features[0]; index: numb
         {/* Inner content wrapper */}
         <div className="relative z-10" style={{ transform: "translateZ(20px)" }}>
           {/* Icon with floating animation */}
-          <motion.div 
-            className="w-14 h-14 rounded-xl bg-[var(--color-accent)]/10 flex items-center justify-center mb-6 relative overflow-hidden"
+          <motion.div
+            className="w-14 h-14 rounded-xl bg-(--text-main) flex items-center justify-center mb-6 relative overflow-hidden shadow-lg"
             animate={isInView ? {
               y: [0, -4, 0],
             } : {}}
@@ -105,11 +105,11 @@ function TiltCard({ feature, index }: { feature: typeof features[0]; index: numb
           >
             {/* Pulse ring animation */}
             <motion.div
-              className="absolute inset-0 rounded-xl bg-[var(--color-accent)]/20"
+              className="absolute inset-0 rounded-xl bg-accent"
               initial={{ scale: 0.8, opacity: 0 }}
               animate={isInView ? {
                 scale: [0.8, 1.2, 0.8],
-                opacity: [0, 0.5, 0],
+                opacity: [0, 0.3, 0],
               } : {}}
               transition={{
                 duration: 2,
@@ -118,7 +118,7 @@ function TiltCard({ feature, index }: { feature: typeof features[0]; index: numb
                 ease: "easeOut"
               }}
             />
-            <feature.icon className="w-7 h-7 text-[var(--color-accent)] relative z-10" />
+            <feature.icon className="w-7 h-7 text-accent relative z-10" strokeWidth={2.5} />
           </motion.div>
           
           {/* Title with character stagger effect */}
