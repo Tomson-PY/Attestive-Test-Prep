@@ -4,9 +4,8 @@ import { GreenGradientHero } from "@/components/sections/GreenGradientHero";
 import { TestimonialSection } from "@/components/sections/TestimonialSection";
 import { ComprehensionLiftSection } from "@/components/sections/ComprehensionLiftSection";
 import LegalHandOffSectionA from "@/components/sections/LegalHandOffSectionA";
+import { ComplianceImpactChartsSection } from "@/components/sections/ComplianceImpactChartsSection";
 import { PoweredByRiata } from "@/components/PoweredByRiata";
-import { FeatureGrid } from "@/components/FeatureGrid";
-import { ValueCarousel } from "@/components/ValueCarousel";
 import { PricingSection } from "@/components/PricingSection";
 import { Footer } from "@/components/Footer";
 
@@ -20,9 +19,8 @@ export default function Home() {
         <GreenGradientHero />
         <ComprehensionLiftSection />
         <LegalHandOffSectionA />
+        <ComplianceImpactChartsSection />
         <PoweredByRiata />
-        <FeatureGrid />
-        <ValueCarousel />
         <PricingSection />
       </div>
       <Footer />

@@ -142,7 +142,6 @@ function MobileMenu({ isOpen, onClose, transparent, currentPath }: MobileMenuPro
   }, [isOpen, onClose]);
 
   const navLinks = [
-    { href: "/#features", label: "Features" },
     { href: "/#how-it-works", label: "How it Works" },
     { href: "/#pricing", label: "Pricing" },
     { href: "/contact", label: "Contact Us" },
@@ -263,7 +262,6 @@ export function Header({ transparent = false }: HeaderProps) {
   }, []);
 
   const navLinks = [
-    { href: "/#features", label: "Features" },
     { href: "/#how-it-works", label: "How it Works" },
     { href: "/#pricing", label: "Pricing" },
     { href: "/contact", label: "Contact Us" },
