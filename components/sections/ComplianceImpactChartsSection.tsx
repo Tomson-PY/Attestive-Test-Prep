@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState, type MouseEvent } from "react";
+import { AccentHighlight } from "@/components/AccentHighlight";
 import {
   Activity,
   Clock3,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 
 type ActiveView = "risk" | "efficiency";
-type DateRange = "30d" | "90d" | "365d";
+type DateRange = "90d" | "365d";
 type OrgUnit = "all" | "north" | "enterprise";
 type Framework = "all" | "soc2" | "hipaa" | "iso";
 
@@ -82,8 +83,17 @@ const timeToCloseBase = [
   { bucket: "90th %ile", before: 72, after: 36 },
 ];
 
+const managementStoryTemplate: Record<DateRange, number[]> = {
+  "90d": [71, 74, 79, 44, 29, 16],
+  "365d": [84, 86, 88, 90, 84, 76, 68, 58, 48, 39, 30, 22],
+};
+
+const managementImplementationIndex: Record<DateRange, number> = {
+  "90d": 2,
+  "365d": 3,
+};
+
 const dateRangeLabels: Record<DateRange, string> = {
-  "30d": "Last 30 days",
   "90d": "Last 90 days",
   "365d": "Last 365 days",
 };
@@ -102,19 +112,16 @@ const frameworkLabels: Record<Framework, string> = {
 };
 
 const dateWindow: Record<DateRange, number> = {
-  "30d": 4,
   "90d": 6,
   "365d": 12,
 };
 
 const riskDateFactor: Record<DateRange, number> = {
-  "30d": 0.95,
   "90d": 1,
   "365d": 1.12,
 };
 
 const efficiencyDateFactor: Record<DateRange, number> = {
-  "30d": 0.94,
   "90d": 1,
   "365d": 1.1,
 };
@@ -205,7 +212,7 @@ function defaultInsight(view: ActiveView): Insight {
       detail:
         "Risk is improving, but repeat issues still cluster around controls with stale evidence and delayed third-party attestations.",
       drivers: [
-        "14 controls are nearing evidence expiration in the next 30 days.",
+        "14 controls are nearing evidence expiration before the next review cycle.",
         "2 vendor groups account for 47% of high-severity repeat incidents.",
         "Access-review signoff latency is above target in one enterprise segment.",
       ],
@@ -334,7 +341,7 @@ export function ComplianceImpactChartsSection() {
   const burnDownLast = burnDownSeries[burnDownSeries.length - 1] ?? 0;
   const evidenceLast = evidenceSeries[evidenceSeries.length - 1] ?? 0;
   const incidentLast = incidentsSeries[incidentsSeries.length - 1] ?? { low: 0, medium: 0, high: 0, repeat: 0 };
-  const high30d = incidentsSeries.slice(-2).reduce((sum, item) => sum + item.high, 0);
+  const recentHighIncidents = incidentsSeries.slice(-2).reduce((sum, item) => sum + item.high, 0);
   const postMedian = timeToCloseSeries.find((item) => item.bucket === "Median")?.after ?? 0;
   const backlog = burnDownLast + incidentLast.high + incidentLast.medium + incidentLast.low;
   const savedHours = clamp(Math.round(462 - (efficiencyFactor - 1) * 260), 180, 560);
@@ -352,9 +359,9 @@ export function ComplianceImpactChartsSection() {
       subtext: "Required controls with current evidence",
     },
     {
-      label: "High-sev incidents (30d)",
-      value: `${high30d}`,
-      subtext: "Critical incidents in the most recent rolling month",
+      label: "High-sev incidents (recent trend)",
+      value: `${recentHighIncidents}`,
+      subtext: "Critical incidents across the most recent two monthly checkpoints",
     },
   ];
 
@@ -409,34 +416,45 @@ export function ComplianceImpactChartsSection() {
   const linePlotHeight = lineChartHeight - linePadding.top - linePadding.bottom;
   const lineMax = 100;
   const lineMin = 0;
-  const managementStorySeries = [
-    { label: "Jul", value: 72 },
-    { label: "Aug", value: 74 },
-    { label: "Sep", value: 80 },
-    { label: "Oct", value: 44 },
-    { label: "Nov", value: 28 },
-    { label: "Dec", value: 16 },
-  ];
+  const managementStorySeries = useMemo(() => {
+    const template = managementStoryTemplate[dateRange];
+    const implementationIndex = managementImplementationIndex[dateRange];
+    return months.map((label, index) => {
+      const base = template[index] ?? template[template.length - 1] ?? 0;
+      const postImplementationGain = index > implementationIndex ? (index - implementationIndex) * 1.2 : 0;
+      return {
+        label,
+        value: clamp(Math.round(base * riskFactor - postImplementationGain), 10, 98),
+        phase: index <= implementationIndex ? "pre" : "post",
+      };
+    });
+  }, [dateRange, months, riskFactor]);
   const burnDownPoints = managementStorySeries.map((item, index) => {
     const x =
       linePadding.left +
       (index / Math.max(managementStorySeries.length - 1, 1)) * linePlotWidth;
     const y =
       linePadding.top + ((lineMax - item.value) / (lineMax - lineMin)) * linePlotHeight;
-    return { label: item.label, x, y, value: item.value };
+    return { label: item.label, x, y, value: item.value, phase: item.phase };
   });
 
   const pointsToPath = (points: Array<{ x: number; y: number }>) =>
     points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
   const burnDownPath = pointsToPath(burnDownPoints);
-  const preImplementationPath = pointsToPath(burnDownPoints.slice(0, 3));
-  const postImplementationPath = pointsToPath(burnDownPoints.slice(2));
+  const implementationPointIndex = Math.min(
+    managementImplementationIndex[dateRange],
+    Math.max(burnDownPoints.length - 2, 0)
+  );
+  const preImplementationPath = pointsToPath(
+    burnDownPoints.slice(0, Math.max(implementationPointIndex + 1, 2))
+  );
+  const postImplementationPath = pointsToPath(burnDownPoints.slice(implementationPointIndex));
   const chartFloorY = lineChartHeight - linePadding.bottom;
   const burnDownAreaPath =
     burnDownPoints.length > 0
       ? `${burnDownPath} L ${burnDownPoints[burnDownPoints.length - 1].x} ${chartFloorY} L ${burnDownPoints[0].x} ${chartFloorY} Z`
       : "";
-  const auditAnnotationIndex = Math.min(2, burnDownPoints.length - 1);
+  const auditAnnotationIndex = Math.min(implementationPointIndex, burnDownPoints.length - 1);
   const auditAnnotationPoint = burnDownPoints[auditAnnotationIndex];
 
   const incidentWidth = 620;
@@ -513,7 +531,11 @@ export function ComplianceImpactChartsSection() {
               Compliance Signal Center
             </p>
             <h3 className="mt-5 font-display text-4xl font-black leading-[1.05] tracking-tight text-white md:text-6xl">
-              Exposure and improvement in one executive view.
+              Easy implementation.
+              <br />
+              <AccentHighlight mode="inView" delay={0.15}>
+                Satisifying results.
+              </AccentHighlight>
             </h3>
             <p className="mt-4 text-lg font-semibold leading-relaxed text-white/85 md:text-2xl">
               Switch between risk and efficiency stories without losing filter context.
@@ -570,7 +592,7 @@ export function ComplianceImpactChartsSection() {
 
             <div className="mt-4 grid gap-3 md:grid-cols-[auto,1fr,1fr]">
               <div className="flex gap-2">
-                {(["30d", "90d", "365d"] as DateRange[]).map((range) => {
+                {(["90d", "365d"] as DateRange[]).map((range) => {
                   const isSelected = range === dateRange;
                   return (
                     <button
@@ -583,7 +605,7 @@ export function ComplianceImpactChartsSection() {
                           : "bg-white/10 text-white/85 hover:bg-white/15"
                       }`}
                     >
-                      {range === "30d" ? "30d" : range === "90d" ? "90d" : "365d"}
+                      {range === "90d" ? "90d" : "365d"}
                     </button>
                   );
                 })}
@@ -650,7 +672,9 @@ export function ComplianceImpactChartsSection() {
                       The story management wants to hear.
                     </h4>
                     <p className="mt-2 text-sm font-semibold text-white/75 md:text-base">
-                      Open audit gaps are dropping and evidence is staying current before the next cycle.
+                      {dateRange === "365d"
+                        ? "Across the full year, open audit gaps keep falling and evidence stays current after implementation."
+                        : "Open audit gaps are dropping and evidence is staying current before the next cycle."}
                     </p>
 
                     <div className="mt-4 rounded-2xl border border-white/15 bg-[#121518]/85 p-4">
@@ -701,19 +725,19 @@ export function ComplianceImpactChartsSection() {
 
                         {burnDownAreaPath && (
                           <motion.path
+                            key={`area-${dateRange}`}
                             initial={{ opacity: 0 }}
-                            whileInView={{ opacity: 1 }}
-                            viewport={{ once: true, amount: 0.3 }}
-                            transition={{ duration: 0.75, ease: "easeOut" }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.65, ease: "easeOut" }}
                             d={burnDownAreaPath}
                             fill="url(#areaFill)"
                           />
                         )}
                         <motion.path
+                          key={`pre-line-${dateRange}`}
                           initial={{ pathLength: 0 }}
-                          whileInView={{ pathLength: 1 }}
-                          viewport={{ once: true, amount: 0.3 }}
-                          transition={{ duration: 0.55, ease: "easeOut" }}
+                          animate={{ pathLength: 1 }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
                           d={preImplementationPath}
                           fill="none"
                           stroke="rgba(255,122,122,0.96)"
@@ -722,10 +746,14 @@ export function ComplianceImpactChartsSection() {
                           strokeLinejoin="round"
                         />
                         <motion.path
+                          key={`post-line-${dateRange}`}
                           initial={{ pathLength: 0 }}
-                          whileInView={{ pathLength: 1 }}
-                          viewport={{ once: true, amount: 0.3 }}
-                          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                          animate={{ pathLength: 1 }}
+                          transition={{
+                            duration: dateRange === "365d" ? 0.95 : 0.8,
+                            delay: 0.14,
+                            ease: "easeOut",
+                          }}
                           d={postImplementationPath}
                           fill="none"
                           stroke="url(#lineGlow)"
@@ -759,21 +787,21 @@ export function ComplianceImpactChartsSection() {
                         {burnDownPoints.map((point, index) => (
                           <g key={`audit-${point.label}`}>
                             <motion.circle
+                              key={`audit-point-${dateRange}-${point.label}`}
                               initial={{ scale: 0 }}
-                              whileInView={{ scale: 1 }}
-                              viewport={{ once: true, amount: 0.3 }}
-                              transition={{ duration: 0.35, delay: 0.15 + index * 0.06 }}
+                              animate={{ scale: 1 }}
+                              transition={{ duration: 0.32, delay: 0.1 + index * 0.05 }}
                               cx={point.x}
                               cy={point.y}
-                              r={6}
-                              fill="#D6FF0A"
+                              r={index === implementationPointIndex || index === burnDownPoints.length - 1 ? 6.8 : 5.8}
+                              fill={point.phase === "pre" ? "#FF8A65" : "#D6FF0A"}
                               stroke="#101315"
                               strokeWidth={2}
                               className="cursor-pointer"
                               onMouseMove={(event) =>
                                 showTooltip(
                                   event,
-                                  `${point.label}: ${point.value} open gaps. Click to inspect the control mix.`
+                                  `${point.label}: ${point.value} open gaps in the ${dateRangeLabels[dateRange].toLowerCase()} view. Click to inspect the control mix.`
                                 )
                               }
                               onMouseLeave={hideTooltip}
