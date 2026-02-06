@@ -1,521 +1,1058 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useMemo, useState, type MouseEvent } from "react";
+import { useEffect, useMemo, useState, type MouseEvent } from "react";
+import { Activity, CalendarDays, ChevronDown, ShieldAlert, Sparkles, X } from "lucide-react";
 import { AccentHighlight } from "@/components/AccentHighlight";
-import {
-  Activity,
-  Clock3,
-  DollarSign,
-  Filter,
-  PlayCircle,
-  RotateCcw,
-  ShieldAlert,
-  Sparkles,
-} from "lucide-react";
 
 type ActiveView = "risk" | "efficiency";
-type DateRange = "90d" | "365d";
-type OrgUnit = "all" | "north" | "enterprise";
-type Framework = "all" | "soc2" | "hipaa" | "iso";
+type DateRange = "30d" | "90d" | "365d" | "custom";
+type Facility = "all" | "north-campus" | "west-hub" | "enterprise";
+type AuditMetricView = "gaps" | "readiness";
+type DrawerTheme = "audit" | "incident" | "efficiency";
+type ExpandedChart = "audit" | "incident";
 
-type Insight = {
-  view: ActiveView;
-  title: string;
-  detail: string;
+type DrawerState = {
+  context: string;
   drivers: string[];
-  actions: string[];
 };
 
-type TooltipState = {
-  visible: boolean;
-  x: number;
-  y: number;
-  text: string;
+type AuditPoint = {
+  month: string;
+  openGaps: number;
+  controlsCurrent: number;
+  overdueAttestations: number;
+  verifiedUnderstanding: number;
+  readinessIndex: number;
 };
 
-type WaterfallPoint = {
-  id: string;
+type IncidentPoint = {
+  month: string;
+  nearMissRate: number;
+  lowRate: number;
+  mediumRate: number;
+  severeRate: number;
+  repeatRate: number;
+  daysBetweenRepeats: number;
+};
+
+type TimeToClosePoint = {
+  bucket: string;
+  before: number;
+  after: number;
+};
+
+type CostPoint = {
   label: string;
-  from: number;
-  to: number;
-  valueLabel: string;
-  kind: "start" | "delta" | "current";
-  cumulativeAfter: number;
+  value: number;
+  kind: "base" | "delta" | "result";
 };
 
-const monthLabels = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
+const auditData: AuditPoint[] = [
+  {
+    month: "Jul",
+    openGaps: 72,
+    controlsCurrent: 54,
+    overdueAttestations: 41,
+    verifiedUnderstanding: 61,
+    readinessIndex: 58,
+  },
+  {
+    month: "Aug",
+    openGaps: 75,
+    controlsCurrent: 56,
+    overdueAttestations: 40,
+    verifiedUnderstanding: 62,
+    readinessIndex: 59,
+  },
+  {
+    month: "Sep",
+    openGaps: 80,
+    controlsCurrent: 55,
+    overdueAttestations: 43,
+    verifiedUnderstanding: 60,
+    readinessIndex: 57,
+  },
+  {
+    month: "Oct",
+    openGaps: 42,
+    controlsCurrent: 74,
+    overdueAttestations: 22,
+    verifiedUnderstanding: 78,
+    readinessIndex: 74,
+  },
+  {
+    month: "Nov",
+    openGaps: 26,
+    controlsCurrent: 86,
+    overdueAttestations: 10,
+    verifiedUnderstanding: 85,
+    readinessIndex: 84,
+  },
+  {
+    month: "Dec",
+    openGaps: 18,
+    controlsCurrent: 92,
+    overdueAttestations: 6,
+    verifiedUnderstanding: 89,
+    readinessIndex: 90,
+  },
 ];
 
-const burnDownBase = [90, 85, 81, 76, 70, 62, 53, 45, 38, 31, 25, 19];
-const evidenceCurrentBase = [67, 69, 70, 72, 74, 77, 80, 84, 87, 89, 91, 93];
-
-const incidentsBase = [
-  { low: 21, medium: 13, high: 8, repeat: 10 },
-  { low: 20, medium: 12, high: 8, repeat: 9 },
-  { low: 19, medium: 12, high: 7, repeat: 9 },
-  { low: 18, medium: 11, high: 7, repeat: 8 },
-  { low: 17, medium: 10, high: 6, repeat: 7 },
-  { low: 16, medium: 10, high: 6, repeat: 7 },
-  { low: 15, medium: 9, high: 5, repeat: 6 },
-  { low: 14, medium: 8, high: 5, repeat: 5 },
-  { low: 13, medium: 8, high: 4, repeat: 5 },
-  { low: 12, medium: 7, high: 4, repeat: 4 },
-  { low: 11, medium: 6, high: 3, repeat: 4 },
-  { low: 10, medium: 6, high: 3, repeat: 3 },
+const incidentsData: IncidentPoint[] = [
+  {
+    month: "Jul",
+    nearMissRate: 12,
+    lowRate: 9,
+    mediumRate: 6,
+    severeRate: 4,
+    repeatRate: 22,
+    daysBetweenRepeats: 11,
+  },
+  {
+    month: "Aug",
+    nearMissRate: 11,
+    lowRate: 10,
+    mediumRate: 5,
+    severeRate: 4,
+    repeatRate: 20,
+    daysBetweenRepeats: 12,
+  },
+  {
+    month: "Sep",
+    nearMissRate: 10,
+    lowRate: 9,
+    mediumRate: 6,
+    severeRate: 5,
+    repeatRate: 23,
+    daysBetweenRepeats: 10,
+  },
+  {
+    month: "Oct",
+    nearMissRate: 13,
+    lowRate: 8,
+    mediumRate: 4,
+    severeRate: 3,
+    repeatRate: 14,
+    daysBetweenRepeats: 18,
+  },
+  {
+    month: "Nov",
+    nearMissRate: 12,
+    lowRate: 7,
+    mediumRate: 3,
+    severeRate: 3,
+    repeatRate: 11,
+    daysBetweenRepeats: 24,
+  },
+  {
+    month: "Dec",
+    nearMissRate: 11,
+    lowRate: 6,
+    mediumRate: 3,
+    severeRate: 2,
+    repeatRate: 9,
+    daysBetweenRepeats: 28,
+  },
 ];
 
-const timeToCloseBase = [
+const timeToCloseData: TimeToClosePoint[] = [
   { bucket: "Median", before: 33, after: 16 },
   { bucket: "75th %ile", before: 49, after: 24 },
   { bucket: "90th %ile", before: 72, after: 36 },
 ];
 
-const managementStoryTemplate: Record<DateRange, number[]> = {
-  "90d": [71, 74, 79, 44, 29, 16],
-  "365d": [84, 86, 88, 90, 84, 76, 68, 58, 48, 39, 30, 22],
-};
+const costData: CostPoint[] = [
+  { label: "Baseline", value: 625, kind: "base" },
+  { label: "Audit Hours", value: -122, kind: "delta" },
+  { label: "External", value: -86, kind: "delta" },
+  { label: "Downtime", value: -78, kind: "delta" },
+  { label: "Repeats", value: -56, kind: "delta" },
+  { label: "Current", value: 283, kind: "result" },
+];
 
-const managementImplementationIndex: Record<DateRange, number> = {
-  "90d": 2,
-  "365d": 3,
-};
-
-const dateRangeLabels: Record<DateRange, string> = {
-  "90d": "Last 90 days",
-  "365d": "Last 365 days",
-};
-
-const orgLabels: Record<OrgUnit, string> = {
-  all: "All Units",
-  north: "North Ops",
+const facilityLabels: Record<Facility, string> = {
+  all: "All orgs / facilities",
+  "north-campus": "North Campus",
+  "west-hub": "West Hub",
   enterprise: "Enterprise",
 };
 
-const frameworkLabels: Record<Framework, string> = {
-  all: "All Frameworks",
-  soc2: "SOC 2",
-  hipaa: "HIPAA",
-  iso: "ISO 27001",
-};
-
-const dateWindow: Record<DateRange, number> = {
-  "90d": 6,
-  "365d": 12,
-};
-
-const riskDateFactor: Record<DateRange, number> = {
-  "90d": 1,
-  "365d": 1.12,
-};
-
-const efficiencyDateFactor: Record<DateRange, number> = {
-  "90d": 1,
-  "365d": 1.1,
-};
-
-const riskOrgFactor: Record<OrgUnit, number> = {
-  all: 1,
-  north: 0.94,
-  enterprise: 1.08,
-};
-
-const efficiencyOrgFactor: Record<OrgUnit, number> = {
-  all: 1,
-  north: 0.93,
-  enterprise: 1.06,
-};
-
-const riskFrameworkFactor: Record<Framework, number> = {
-  all: 1,
-  soc2: 0.95,
-  hipaa: 1.08,
-  iso: 0.97,
-};
-
-const efficiencyFrameworkFactor: Record<Framework, number> = {
-  all: 1,
-  soc2: 0.94,
-  hipaa: 1.07,
-  iso: 0.98,
+const rangeWindow: Record<DateRange, number> = {
+  "30d": 4,
+  "90d": 5,
+  "365d": 6,
+  custom: 6,
 };
 
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-function buildWaterfallPoints(baselineCostK: number, reductionScale: number): WaterfallPoint[] {
-  const deltas = [
-    { id: "audit-hours", label: "Audit Hours", delta: -Math.round(122 * reductionScale) },
-    { id: "external", label: "External Spend", delta: -Math.round(86 * reductionScale) },
-    { id: "downtime", label: "Downtime Avoided", delta: -Math.round(78 * reductionScale) },
-    { id: "repeat", label: "Repeat Incidents", delta: -Math.round(56 * reductionScale) },
-  ];
+function buildSmoothPath(points: Array<{ x: number; y: number }>) {
+  if (points.length === 0) return "";
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
 
-  const points: WaterfallPoint[] = [
-    {
-      id: "baseline",
-      label: "Baseline",
-      from: 0,
-      to: baselineCostK,
-      valueLabel: `$${baselineCostK}k`,
-      kind: "start",
-      cumulativeAfter: baselineCostK,
-    },
-  ];
-
-  let running = baselineCostK;
-  for (const item of deltas) {
-    const next = running + item.delta;
-    points.push({
-      id: item.id,
-      label: item.label,
-      from: next,
-      to: running,
-      valueLabel: `-${Math.abs(item.delta)}k`,
-      kind: "delta",
-      cumulativeAfter: next,
-    });
-    running = next;
+  let path = `M ${points[0].x} ${points[0].y}`;
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const current = points[index];
+    const next = points[index + 1];
+    const controlX = (current.x + next.x) / 2;
+    const controlY = (current.y + next.y) / 2;
+    path += ` Q ${current.x} ${current.y} ${controlX} ${controlY}`;
   }
 
-  points.push({
-    id: "current",
-    label: "Current",
-    from: 0,
-    to: running,
-    valueLabel: `$${running}k`,
-    kind: "current",
-    cumulativeAfter: running,
-  });
-
-  return points;
+  const finalPoint = points[points.length - 1];
+  path += ` T ${finalPoint.x} ${finalPoint.y}`;
+  return path;
 }
 
-function defaultInsight(view: ActiveView): Insight {
-  if (view === "risk") {
+function buildLinePath(points: Array<{ x: number; y: number }>) {
+  if (points.length === 0) return "";
+  return points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+}
+
+function getRolloutRange(points: Array<{ label: string; x: number }>, fallbackStep: number) {
+  const sepIndex = points.findIndex((point) => point.label === "Sep");
+  const octIndex = points.findIndex((point) => point.label === "Oct");
+
+  if (sepIndex === -1 || octIndex === -1) {
     return {
-      view,
-      title: "Top drivers are concentrated in access reviews and vendor evidence timeliness.",
-      detail:
-        "Risk is improving, but repeat issues still cluster around controls with stale evidence and delayed third-party attestations.",
-      drivers: [
-        "14 controls are nearing evidence expiration before the next review cycle.",
-        "2 vendor groups account for 47% of high-severity repeat incidents.",
-        "Access-review signoff latency is above target in one enterprise segment.",
-      ],
-      actions: [
-        "Auto-escalate controls with evidence age > 45 days to control owners.",
-        "Increase vendor review cadence from quarterly to monthly for critical vendors.",
-        "Trigger focused training for teams with repeat incident concentration.",
-      ],
+      start: points[0]?.x ?? 0,
+      end: (points[0]?.x ?? 0) + fallbackStep,
     };
   }
 
+  const sepPoint = points[sepIndex];
+  const octPoint = points[octIndex];
+  const start = sepPoint.x + fallbackStep * 0.12;
+  const end = octPoint.x - fallbackStep * 0.18;
   return {
-    view,
-    title: "Efficiency gains are strongest in remediation cycle time and external audit prep.",
-    detail:
-      "The largest savings now come from shrinking long-tail closures and reducing consultant rework during evidence collection.",
-    drivers: [
-      "90th percentile closure time is down by roughly half versus pre-rollout.",
-      "Audit prep labor reduction is the largest cost-avoidance contributor.",
-      "Repeat incident investigation effort continues to decline month over month.",
-    ],
-    actions: [
-      "Lock evidence automation coverage to all critical controls this quarter.",
-      "Use targeted coaching for owners with closure times above the 75th percentile.",
-      "Publish monthly efficiency scorecards for leadership and remediation teams.",
-    ],
+    start,
+    end: Math.max(end, start + fallbackStep * 0.5),
   };
+}
+
+type KpiChipProps = {
+  from: string;
+  to: string;
+  label: string;
+  delta: string;
+  tone?: "accent" | "green" | "orange";
+};
+
+function KpiChip({ from, to, label, delta, tone = "accent" }: KpiChipProps) {
+  const toneClass =
+    tone === "green"
+      ? "text-[var(--color-accent-2)]"
+      : tone === "orange"
+      ? "text-[#ffb38d]"
+      : "text-[var(--color-accent)]";
+
+  return (
+    <div className="min-w-[164px] rounded-2xl border border-white/18 bg-black/35 px-4 py-3">
+      <p className={`font-display text-2xl font-black leading-none ${toneClass}`}>
+        {from} <span className="text-white/55">→</span> {to}
+      </p>
+      <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.14em] text-white/65">{label}</p>
+      <p className="mt-1 text-xs font-semibold text-white/80">{delta}</p>
+    </div>
+  );
+}
+
+type RolloutBandProps = {
+  x: number;
+  width: number;
+  y: number;
+  height: number;
+  label: string;
+};
+
+function RolloutBand({ x, width, y, height, label }: RolloutBandProps) {
+  return (
+    <>
+      <rect
+        x={x}
+        y={y}
+        width={width}
+        height={height}
+        fill="rgba(214,255,10,0.08)"
+        stroke="rgba(214,255,10,0.36)"
+        strokeDasharray="5 5"
+      />
+      <text
+        x={x + width / 2}
+        y={y - 8}
+        textAnchor="middle"
+        fill="rgba(214,255,10,0.95)"
+        fontSize="12"
+        fontWeight="800"
+      >
+        {label}
+      </text>
+    </>
+  );
+}
+
+type TargetLineLabelProps = {
+  x1: number;
+  x2: number;
+  y: number;
+  label: string;
+  labelMode?: "line" | "bottom";
+  bottomY?: number;
+  bottomXRatio?: number;
+};
+
+function TargetLineLabel({
+  x1,
+  x2,
+  y,
+  label,
+  labelMode = "line",
+  bottomY,
+  bottomXRatio = 0.73,
+}: TargetLineLabelProps) {
+  const labelWidth = Math.max(120, Math.round(label.length * 6.8) + 16);
+  const labelX = x2 - labelWidth - 4;
+  const labelY = y - 22;
+  const legendY = bottomY ?? y + 20;
+  const legendTextX = x1 + (x2 - x1) * bottomXRatio;
+
+  return (
+    <>
+      <line
+        x1={x1}
+        y1={y}
+        x2={x2}
+        y2={y}
+        stroke="rgba(255,255,255,0.62)"
+        strokeWidth={1.5}
+        strokeDasharray="6 6"
+      />
+      {labelMode === "line" ? (
+        <>
+          <rect
+            x={labelX}
+            y={labelY}
+            width={labelWidth}
+            height={18}
+            rx={8}
+            fill="rgba(11,15,18,0.9)"
+            stroke="rgba(255,255,255,0.22)"
+          />
+          <text
+            x={x2 - 10}
+            y={labelY + 13}
+            textAnchor="end"
+            fill="rgba(255,255,255,0.9)"
+            fontSize="12"
+            fontWeight="800"
+          >
+            {label}
+          </text>
+        </>
+      ) : (
+        <g>
+          <text
+            x={legendTextX}
+            y={legendY}
+            textAnchor="start"
+            fill="rgba(255,255,255,0.9)"
+            fontSize="12"
+            fontWeight="800"
+          >
+            {label}
+          </text>
+        </g>
+      )}
+    </>
+  );
+}
+
+type AnnotationCalloutProps = {
+  x: number;
+  y: number;
+  lines: [string, string];
+  width?: number;
+};
+
+function AnnotationCallout({ x, y, lines, width = 208 }: AnnotationCalloutProps) {
+  const bubbleX = x + 18;
+  const bubbleY = y - 44;
+
+  return (
+    <>
+      <circle cx={x} cy={y} r={5} fill="#D6FF0A" stroke="#101315" strokeWidth={2} />
+      <line x1={x + 5} y1={y - 5} x2={bubbleX} y2={bubbleY + 16} stroke="rgba(255,255,255,0.8)" strokeWidth={1.2} />
+      <rect
+        x={bubbleX}
+        y={bubbleY}
+        rx={10}
+        width={width}
+        height={38}
+        fill="rgba(11,15,18,0.92)"
+        stroke="rgba(255,255,255,0.24)"
+      />
+      <text x={bubbleX + 10} y={bubbleY + 14} fill="rgba(255,255,255,0.94)" fontSize="11" fontWeight="700">
+        {lines[0]}
+      </text>
+      <text x={bubbleX + 10} y={bubbleY + 28} fill="rgba(255,255,255,0.94)" fontSize="11" fontWeight="700">
+        {lines[1]}
+      </text>
+    </>
+  );
+}
+
+function drawerDrivers(theme: DrawerTheme): string[] {
+  if (theme === "audit") {
+    return [
+      "Comprehension checkpoints now block attestations when understanding fails.",
+      "Manager follow-up SLA is enforced for unresolved evidence questions.",
+      "Escalation loop routes stalled controls before they age into open gaps.",
+    ];
+  }
+
+  if (theme === "incident") {
+    return [
+      "Scenario-based checks reduced repeat misunderstanding in high-risk workflows.",
+      "Manager escalation is triggered automatically on repeat pattern detection.",
+      "Near-miss reporting improved, allowing severe risks to be corrected earlier.",
+    ];
+  }
+
+  return [
+    "Closure ownership is visible by facility and escalated before SLA breach.",
+    "Evidence handoffs are automated, reducing rework during audit preparation.",
+    "Repeat investigations are shrinking as root-cause coaching is sustained.",
+  ];
 }
 
 export function ComplianceImpactChartsSection() {
   const [activeView, setActiveView] = useState<ActiveView>("risk");
-  const [dateRange, setDateRange] = useState<DateRange>("90d");
-  const [orgUnit, setOrgUnit] = useState<OrgUnit>("all");
-  const [framework, setFramework] = useState<Framework>("all");
-  const [drillFilter, setDrillFilter] = useState<string | null>(null);
-  const [insight, setInsight] = useState<Insight>(defaultInsight("risk"));
-  const [tooltip, setTooltip] = useState<TooltipState>({
-    visible: false,
-    x: 0,
-    y: 0,
-    text: "",
+  const [dateRange, setDateRange] = useState<DateRange>("365d");
+  const [facility, setFacility] = useState<Facility>("all");
+  const [auditMetricView, setAuditMetricView] = useState<AuditMetricView>("gaps");
+  const [drawer, setDrawer] = useState<DrawerState | null>(null);
+  const [expandedChart, setExpandedChart] = useState<ExpandedChart | null>(null);
+
+  const windowSize = rangeWindow[dateRange];
+  const auditWindow = useMemo(() => auditData.slice(Math.max(auditData.length - windowSize, 0)), [windowSize]);
+  const incidentWindow = useMemo(
+    () => incidentsData.slice(Math.max(incidentsData.length - windowSize, 0)),
+    [windowSize]
+  );
+
+  const openDrawer = (context: string, theme: DrawerTheme) => {
+    setDrawer({ context, drivers: drawerDrivers(theme) });
+  };
+
+  const closeExpandedChart = () => {
+    setExpandedChart(null);
+  };
+
+  const openExpandedChart = (chart: ExpandedChart) => {
+    setDrawer(null);
+    setExpandedChart(chart);
+  };
+
+  const maybeOpenExpandedChart =
+    (chart: ExpandedChart) => (event: MouseEvent<HTMLDivElement>) => {
+      const target = event.target as Element | null;
+      if (target?.closest('[data-drill="true"]')) return;
+      openExpandedChart(chart);
+    };
+
+  useEffect(() => {
+    if (!expandedChart) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setExpandedChart(null);
+      }
+    };
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [expandedChart]);
+
+  const auditWidth = 640;
+  const auditHeight = 306;
+  const auditPadding = { top: 26, right: 40, bottom: 50, left: 58 };
+  const auditPlotWidth = auditWidth - auditPadding.left - auditPadding.right;
+  const auditPlotHeight = auditHeight - auditPadding.top - auditPadding.bottom;
+
+  const auditMetric = auditMetricView === "gaps" ? "openGaps" : "readinessIndex";
+  const auditMax = auditMetricView === "gaps" ? 90 : 100;
+  const auditTicks = auditMetricView === "gaps" ? [0, 20, 40, 60, 80] : [0, 20, 40, 60, 80, 100];
+  const auditYLabel = auditMetricView === "gaps" ? "Open gaps (#)" : "Readiness index (0-100)";
+  const auditTargetValue = auditMetricView === "gaps" ? 20 : 85;
+  const auditTargetLabel = auditMetricView === "gaps" ? "Target: <20 open gaps" : "Target: >85 readiness";
+
+  const auditPoints = auditWindow.map((row, index) => {
+    const step = auditPlotWidth / Math.max(auditWindow.length - 1, 1);
+    const x = auditPadding.left + index * step;
+    const value = row[auditMetric as keyof AuditPoint] as number;
+    const y = auditPadding.top + ((auditMax - value) / auditMax) * auditPlotHeight;
+    return { label: row.month, x, y, value };
   });
 
-  const showTooltip = (event: MouseEvent<SVGElement | HTMLElement>, text: string) => {
-    setTooltip({
-      visible: true,
-      x: event.clientX + 12,
-      y: event.clientY + 12,
-      text,
-    });
-  };
-
-  const hideTooltip = () => {
-    setTooltip((previous) => ({ ...previous, visible: false }));
-  };
-
-  const clearAllFilters = () => {
-    setDateRange("90d");
-    setOrgUnit("all");
-    setFramework("all");
-    setDrillFilter(null);
-    setInsight(defaultInsight(activeView));
-  };
-
-  const hasActiveFilter = dateRange !== "90d" || orgUnit !== "all" || framework !== "all" || drillFilter !== null;
-
-  const riskFactor = useMemo(() => {
-    return riskDateFactor[dateRange] * riskOrgFactor[orgUnit] * riskFrameworkFactor[framework];
-  }, [dateRange, orgUnit, framework]);
-
-  const efficiencyFactor = useMemo(() => {
-    return (
-      efficiencyDateFactor[dateRange] *
-      efficiencyOrgFactor[orgUnit] *
-      efficiencyFrameworkFactor[framework]
-    );
-  }, [dateRange, orgUnit, framework]);
-
-  const windowSize = dateWindow[dateRange];
-  const startIndex = monthLabels.length - windowSize;
-  const months = monthLabels.slice(startIndex);
-
-  const burnDownSeries = useMemo(() => {
-    return burnDownBase.slice(startIndex).map((value, index) => {
-      const slopeAdjust = 1 - index * 0.01;
-      return clamp(Math.round(value * riskFactor * slopeAdjust), 8, 99);
-    });
-  }, [startIndex, riskFactor]);
-
-  const evidenceSeries = useMemo(() => {
-    return evidenceCurrentBase.slice(startIndex).map((value) => {
-      const reduction = (riskFactor - 1) * 19;
-      return clamp(Math.round(value - reduction), 58, 98);
-    });
-  }, [startIndex, riskFactor]);
-
-  const incidentsSeries = useMemo(() => {
-    return incidentsBase.slice(startIndex).map((item, index) => {
-      const trendAdjust = 1 - index * 0.02;
-      return {
-        low: clamp(Math.round(item.low * riskFactor * trendAdjust), 2, 38),
-        medium: clamp(Math.round(item.medium * riskFactor * trendAdjust), 1, 30),
-        high: clamp(Math.round(item.high * riskFactor * trendAdjust), 1, 24),
-        repeat: clamp(Math.round(item.repeat * riskFactor * trendAdjust), 1, 18),
-      };
-    });
-  }, [startIndex, riskFactor]);
-
-  const timeToCloseSeries = useMemo(() => {
-    return timeToCloseBase.map((bucket) => {
-      return {
-        bucket: bucket.bucket,
-        before: clamp(Math.round(bucket.before * efficiencyFactor), 10, 120),
-        after: clamp(Math.round(bucket.after * efficiencyFactor), 5, 80),
-      };
-    });
-  }, [efficiencyFactor]);
-
-  const baselineCostK = clamp(Math.round(625 * efficiencyFactor), 420, 890);
-  const reductionScale = clamp(1.14 - (efficiencyFactor - 1) * 0.7, 0.72, 1.28);
-  const waterfallPoints = useMemo(
-    () => buildWaterfallPoints(baselineCostK, reductionScale),
-    [baselineCostK, reductionScale]
-  );
-
-  const burnDownLast = burnDownSeries[burnDownSeries.length - 1] ?? 0;
-  const evidenceLast = evidenceSeries[evidenceSeries.length - 1] ?? 0;
-  const incidentLast = incidentsSeries[incidentsSeries.length - 1] ?? { low: 0, medium: 0, high: 0, repeat: 0 };
-  const recentHighIncidents = incidentsSeries.slice(-2).reduce((sum, item) => sum + item.high, 0);
-  const postMedian = timeToCloseSeries.find((item) => item.bucket === "Median")?.after ?? 0;
-  const backlog = burnDownLast + incidentLast.high + incidentLast.medium + incidentLast.low;
-  const savedHours = clamp(Math.round(462 - (efficiencyFactor - 1) * 260), 180, 560);
-  const currentCost = waterfallPoints[waterfallPoints.length - 1]?.to ?? baselineCostK;
-
-  const riskKpis = [
-    {
-      label: "Open high-risk findings",
-      value: `${Math.max(6, Math.round(burnDownLast * 0.42))}`,
-      subtext: "Priority controls needing immediate remediation",
-    },
-    {
-      label: "% controls current",
-      value: `${evidenceLast}%`,
-      subtext: "Required controls with current evidence",
-    },
-    {
-      label: "High-sev incidents (recent trend)",
-      value: `${recentHighIncidents}`,
-      subtext: "Critical incidents across the most recent two monthly checkpoints",
-    },
-  ];
-
-  const efficiencyKpis = [
-    {
-      label: "Median days-to-close",
-      value: `${postMedian} days`,
-      subtext: "Median remediation cycle after rollout",
-    },
-    {
-      label: "Backlog",
-      value: `${backlog}`,
-      subtext: "Open findings and incident queue combined",
-    },
-    {
-      label: "Estimated hours saved / month",
-      value: `${savedHours}h`,
-      subtext: "Labor reclaimed from automation and faster closure",
-    },
-  ];
-
-  const setRiskView = () => {
-    setActiveView("risk");
-    setInsight(defaultInsight("risk"));
-  };
-
-  const setEfficiencyView = () => {
-    setActiveView("efficiency");
-    setInsight(defaultInsight("efficiency"));
-  };
-
-  const openInsight = (next: Omit<Insight, "view">) => {
-    setInsight({ ...next, view: activeView });
-  };
-
-  const activeInsight = insight.view === activeView ? insight : defaultInsight(activeView);
-
-  const menuItems: Array<{
-    id: ActiveView;
-    label: string;
-    Icon: typeof ShieldAlert;
-    onSelect: () => void;
-  }> = [
-    { id: "risk", label: "Risk Posture", Icon: ShieldAlert, onSelect: setRiskView },
-    { id: "efficiency", label: "Operational Efficiency", Icon: Activity, onSelect: setEfficiencyView },
-  ];
-
-  const lineChartWidth = 620;
-  const lineChartHeight = 280;
-  const linePadding = { top: 22, right: 18, bottom: 36, left: 44 };
-  const linePlotWidth = lineChartWidth - linePadding.left - linePadding.right;
-  const linePlotHeight = lineChartHeight - linePadding.top - linePadding.bottom;
-  const lineMax = 100;
-  const lineMin = 0;
-  const managementStorySeries = useMemo(() => {
-    const template = managementStoryTemplate[dateRange];
-    const implementationIndex = managementImplementationIndex[dateRange];
-    return months.map((label, index) => {
-      const base = template[index] ?? template[template.length - 1] ?? 0;
-      const postImplementationGain = index > implementationIndex ? (index - implementationIndex) * 1.2 : 0;
-      return {
-        label,
-        value: clamp(Math.round(base * riskFactor - postImplementationGain), 10, 98),
-        phase: index <= implementationIndex ? "pre" : "post",
-      };
-    });
-  }, [dateRange, months, riskFactor]);
-  const burnDownPoints = managementStorySeries.map((item, index) => {
-    const x =
-      linePadding.left +
-      (index / Math.max(managementStorySeries.length - 1, 1)) * linePlotWidth;
-    const y =
-      linePadding.top + ((lineMax - item.value) / (lineMax - lineMin)) * linePlotHeight;
-    return { label: item.label, x, y, value: item.value, phase: item.phase };
-  });
-
-  const pointsToPath = (points: Array<{ x: number; y: number }>) =>
-    points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
-  const burnDownPath = pointsToPath(burnDownPoints);
-  const implementationPointIndex = Math.min(
-    managementImplementationIndex[dateRange],
-    Math.max(burnDownPoints.length - 2, 0)
-  );
-  const preImplementationPath = pointsToPath(
-    burnDownPoints.slice(0, Math.max(implementationPointIndex + 1, 2))
-  );
-  const postImplementationPath = pointsToPath(burnDownPoints.slice(implementationPointIndex));
-  const chartFloorY = lineChartHeight - linePadding.bottom;
-  const burnDownAreaPath =
-    burnDownPoints.length > 0
-      ? `${burnDownPath} L ${burnDownPoints[burnDownPoints.length - 1].x} ${chartFloorY} L ${burnDownPoints[0].x} ${chartFloorY} Z`
+  const auditStep = auditPlotWidth / Math.max(auditWindow.length - 1, 1);
+  const auditPath = buildLinePath(auditPoints);
+  const auditAreaPath =
+    auditPoints.length > 1
+      ? `${auditPath} L ${auditPoints[auditPoints.length - 1].x} ${auditHeight - auditPadding.bottom} L ${auditPoints[0].x} ${auditHeight - auditPadding.bottom} Z`
       : "";
-  const auditAnnotationIndex = Math.min(implementationPointIndex, burnDownPoints.length - 1);
-  const auditAnnotationPoint = burnDownPoints[auditAnnotationIndex];
 
-  const incidentWidth = 620;
-  const incidentHeight = 300;
-  const incidentPadding = { top: 20, right: 20, bottom: 46, left: 44 };
+  const verifiedPath = buildLinePath(
+    auditWindow.map((row, index) => {
+      const x = auditPadding.left + index * auditStep;
+      const y = auditPadding.top + ((100 - row.verifiedUnderstanding) / 100) * auditPlotHeight;
+      return { x, y };
+    })
+  );
+
+  const auditRollout = getRolloutRange(
+    auditPoints.map((point) => ({ label: point.label, x: point.x })),
+    Math.max(auditStep, 36)
+  );
+
+  const auditOctPoint = auditPoints.find((point) => point.label === "Oct") ?? auditPoints[Math.min(3, auditPoints.length - 1)];
+
+  const incidentWidth = 640;
+  const incidentHeight = 320;
+  const incidentPadding = { top: 26, right: 52, bottom: 52, left: 58 };
   const incidentPlotWidth = incidentWidth - incidentPadding.left - incidentPadding.right;
   const incidentPlotHeight = incidentHeight - incidentPadding.top - incidentPadding.bottom;
-  const incidentMax = Math.max(
-    ...incidentsSeries.map((item) => item.low + item.medium + item.high),
-    26
+
+  const incidentTotals = incidentWindow.map(
+    (row) => row.nearMissRate + row.lowRate + row.mediumRate + row.severeRate
   );
+  const incidentMax = Math.max(...incidentTotals, 36);
   const incidentScaleY = (value: number) =>
     incidentPadding.top + ((incidentMax - value) / incidentMax) * incidentPlotHeight;
-  const incidentStep = incidentPlotWidth / Math.max(incidentsSeries.length, 1);
-  const incidentBarWidth = Math.min(44, incidentStep * 0.58);
-  const repeatPath = incidentsSeries
-    .map((item, index) => {
-      const x = incidentPadding.left + index * incidentStep + incidentStep / 2;
-      const y = incidentScaleY(item.repeat);
-      return `${index === 0 ? "M" : "L"} ${x} ${y}`;
-    })
-    .join(" ");
-  const incidentAnnotationIndex = Math.min(3, incidentsSeries.length - 1);
-  const incidentAnnotationX =
-    incidentPadding.left + incidentAnnotationIndex * incidentStep + incidentStep / 2;
 
-  const distributionWidth = 620;
-  const distributionHeight = 280;
-  const distributionPadding = { top: 20, right: 18, bottom: 46, left: 44 };
-  const distributionPlotWidth = distributionWidth - distributionPadding.left - distributionPadding.right;
-  const distributionPlotHeight = distributionHeight - distributionPadding.top - distributionPadding.bottom;
-  const distributionMax = Math.max(...timeToCloseSeries.map((item) => item.before), 90);
-  const distributionScaleY = (value: number) =>
-    distributionPadding.top + ((distributionMax - value) / distributionMax) * distributionPlotHeight;
-  const distributionStep = distributionPlotWidth / Math.max(timeToCloseSeries.length, 1);
-  const distributionAnnotationX = distributionPadding.left + distributionStep * 1.15;
+  const repeatMax = 25;
+  const repeatScaleY = (value: number) =>
+    incidentPadding.top + ((repeatMax - value) / repeatMax) * incidentPlotHeight;
 
-  const waterfallWidth = 620;
-  const waterfallHeight = 300;
-  const waterfallPadding = { top: 20, right: 20, bottom: 78, left: 44 };
-  const waterfallMax = Math.max(baselineCostK + 40, 620);
-  const waterfallPlotWidth = waterfallWidth - waterfallPadding.left - waterfallPadding.right;
-  const waterfallStep = waterfallPlotWidth / Math.max(waterfallPoints.length, 1);
-  const waterfallBarWidth = Math.min(54, waterfallStep * 0.62);
-  const waterfallScaleY = (value: number) =>
-    waterfallPadding.top +
-    ((waterfallMax - value) / waterfallMax) * (waterfallHeight - waterfallPadding.top - waterfallPadding.bottom);
+  const incidentStep = incidentPlotWidth / Math.max(incidentWindow.length, 1);
+  const incidentBarWidth = Math.min(48, incidentStep * 0.62);
+
+  const repeatPoints = incidentWindow.map((row, index) => {
+    const x = incidentPadding.left + index * incidentStep + incidentStep / 2;
+    const y = repeatScaleY(row.repeatRate);
+    return { label: row.month, x, y, value: row.repeatRate };
+  });
+
+  const repeatPath = buildSmoothPath(repeatPoints);
+  const incidentRollout = getRolloutRange(
+    repeatPoints.map((point) => ({ label: point.label, x: point.x })),
+    Math.max(incidentStep, 40)
+  );
+  const incidentOctPoint = repeatPoints.find((point) => point.label === "Oct") ?? repeatPoints[Math.min(3, repeatPoints.length - 1)];
+
+  const severeThreshold = 3.4;
+  const severeThresholdY = incidentScaleY(severeThreshold);
+
+  const riskKpiLeft = [
+    {
+      from: "72",
+      to: "18",
+      label: "Open gaps (Jul-Dec)",
+      delta: "-75%",
+      tone: "accent" as const,
+    },
+    {
+      from: "54%",
+      to: "92%",
+      label: "Controls current",
+      delta: "+38 pts",
+      tone: "green" as const,
+    },
+    {
+      from: "61%",
+      to: "89%",
+      label: "Verified understanding",
+      delta: "+28 pts",
+      tone: "orange" as const,
+    },
+  ];
+
+  const riskKpiRight = [
+    {
+      from: "22%",
+      to: "9%",
+      label: "Repeat rate",
+      delta: "-59%",
+      tone: "accent" as const,
+    },
+    {
+      from: "4",
+      to: "2",
+      label: "Severe rate / 10k hrs",
+      delta: "-50%",
+      tone: "green" as const,
+    },
+    {
+      from: "11",
+      to: "28",
+      label: "Days between repeats",
+      delta: "+155%",
+      tone: "orange" as const,
+    },
+  ];
+
+  const efficiencyKpisA = [
+    { from: "33", to: "16", label: "Median days-to-close", delta: "-52%", tone: "green" as const },
+    { from: "72", to: "36", label: "90th percentile", delta: "-50%", tone: "accent" as const },
+  ];
+
+  const efficiencyKpisB = [
+    { from: "$625k", to: "$283k", label: "Estimated annual cost", delta: "-55%", tone: "green" as const },
+    { from: "0", to: "342k", label: "Avoidance captured", delta: "Illustrative", tone: "accent" as const },
+  ];
+
+  const closeMax = Math.max(...timeToCloseData.map((row) => row.before), 80);
+  const closeWidth = 640;
+  const closeHeight = 292;
+  const closePadding = { top: 24, right: 20, bottom: 52, left: 58 };
+  const closePlotWidth = closeWidth - closePadding.left - closePadding.right;
+  const closePlotHeight = closeHeight - closePadding.top - closePadding.bottom;
+  const closeScaleY = (value: number) =>
+    closePadding.top + ((closeMax - value) / closeMax) * closePlotHeight;
+  const closeStep = closePlotWidth / Math.max(timeToCloseData.length, 1);
+
+  const costWidth = 640;
+  const costHeight = 320;
+  const costPadding = { top: 24, right: 24, bottom: 72, left: 58 };
+  const costMax = 700;
+  const costScaleY = (value: number) =>
+    costPadding.top + ((costMax - value) / costMax) * (costHeight - costPadding.top - costPadding.bottom);
+  const costStep = (costWidth - costPadding.left - costPadding.right) / Math.max(costData.length, 1);
+  const costBarWidth = Math.min(56, costStep * 0.64);
+
+  const activeTabClass = "text-[#151515]";
+  const inactiveTabClass = "text-white/82 hover:text-white";
+
+  const renderAuditChart = (variant: "card" | "expanded") => {
+    const expanded = variant === "expanded";
+    const lineGradientId = `auditLineGradient-${variant}`;
+    const areaFillId = `auditAreaFill-${variant}`;
+    const postRolloutMonths = new Set(["Oct", "Nov", "Dec"]);
+    const auditTargetY = auditPadding.top + ((auditMax - auditTargetValue) / auditMax) * auditPlotHeight;
+
+    return (
+      <svg
+        viewBox={`0 0 ${auditWidth} ${auditHeight}`}
+        className={expanded ? "h-[62vh] min-h-[380px] w-full" : "h-[270px] w-full"}
+        role="img"
+        aria-label="Audit risk trend with target and rollout band."
+      >
+        <defs>
+          <linearGradient id={lineGradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="rgba(255,122,122,0.78)" />
+            <stop offset="45%" stopColor="rgba(255,122,122,0.78)" />
+            <stop offset="60%" stopColor="rgba(0,211,127,0.92)" />
+            <stop offset="100%" stopColor="rgba(0,211,127,0.96)" />
+          </linearGradient>
+          <linearGradient id={areaFillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(0,211,127,0.30)" />
+            <stop offset="100%" stopColor="rgba(0,211,127,0.02)" />
+          </linearGradient>
+        </defs>
+
+        {auditTicks.map((tick) => {
+          const y = auditPadding.top + ((auditMax - tick) / auditMax) * auditPlotHeight;
+          return (
+            <g key={`audit-tick-${variant}-${tick}`}>
+              <line
+                x1={auditPadding.left}
+                y1={y}
+                x2={auditWidth - auditPadding.right}
+                y2={y}
+                stroke="rgba(255,255,255,0.14)"
+                strokeDasharray="3 6"
+              />
+              <text
+                x={auditPadding.left - 10}
+                y={y + 4}
+                textAnchor="end"
+                fill="rgba(255,255,255,0.72)"
+                fontSize="12"
+                fontWeight="700"
+              >
+                {tick}
+              </text>
+            </g>
+          );
+        })}
+
+        <RolloutBand
+          x={auditRollout.start}
+          width={auditRollout.end - auditRollout.start}
+          y={auditPadding.top}
+          height={auditPlotHeight}
+          label="Attestiva rollout"
+        />
+
+        {auditAreaPath && <path d={auditAreaPath} fill={`url(#${areaFillId})`} />}
+
+        <motion.path
+          d={auditPath}
+          fill="none"
+          stroke={`url(#${lineGradientId})`}
+          strokeWidth={5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.9, ease: "easeOut" }}
+        />
+
+        {auditMetricView === "gaps" && (
+          <>
+            <path
+              d={verifiedPath}
+              fill="none"
+              stroke="rgba(255,179,141,0.88)"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+            />
+            <text
+              x={auditWidth - auditPadding.right - 2}
+              y={auditPadding.top + 14}
+              textAnchor="end"
+              fill="rgba(255,179,141,0.9)"
+              fontSize="11"
+              fontWeight="700"
+            >
+              Verified understanding (%)
+            </text>
+          </>
+        )}
+
+        <TargetLineLabel
+          x1={auditPadding.left}
+          x2={auditWidth - auditPadding.right}
+          y={auditTargetY}
+          label={auditTargetLabel}
+          labelMode="bottom"
+          bottomY={auditTargetY + 18}
+          bottomXRatio={0.07}
+        />
+
+        {auditPoints.map((point) => (
+          <g key={`audit-point-${variant}-${point.label}`}>
+            <circle
+              cx={point.x}
+              cy={point.y}
+              r={5}
+              fill={postRolloutMonths.has(point.label) ? "#D6FF0A" : "#ff9d8d"}
+              stroke="#0f1418"
+              strokeWidth={2}
+              className="cursor-pointer"
+              data-drill="true"
+              onClick={(event) => {
+                event.stopPropagation();
+                if (variant !== "card") return;
+                openDrawer(`Audit risk detail: ${point.label}`, "audit");
+              }}
+            />
+            <text
+              x={point.x}
+              y={auditHeight - 14}
+              textAnchor="middle"
+              fill="rgba(255,255,255,0.83)"
+              fontSize="12"
+              fontWeight="700"
+            >
+              {point.label}
+            </text>
+          </g>
+        ))}
+
+        {auditOctPoint && (
+          <AnnotationCallout
+            x={auditOctPoint.x}
+            y={auditOctPoint.y}
+            lines={["Verified understanding +", "escalation loop"]}
+            width={184}
+          />
+        )}
+
+        <text
+          x={16}
+          y={auditPadding.top + auditPlotHeight / 2}
+          transform={`rotate(-90 16 ${auditPadding.top + auditPlotHeight / 2})`}
+          fill="rgba(255,255,255,0.75)"
+          fontSize="12"
+          fontWeight="700"
+        >
+          {auditYLabel}
+        </text>
+        <text
+          x={auditPadding.left + auditPlotWidth / 2}
+          y={auditHeight - 6}
+          textAnchor="middle"
+          fill="rgba(255,255,255,0.75)"
+          fontSize="12"
+          fontWeight="700"
+        >
+          Month
+        </text>
+      </svg>
+    );
+  };
+
+  const renderIncidentChart = (variant: "card" | "expanded") => {
+    const expanded = variant === "expanded";
+
+    return (
+      <svg
+        viewBox={`0 0 ${incidentWidth} ${incidentHeight}`}
+        className={expanded ? "h-[66vh] min-h-[420px] w-full" : "h-[285px] w-full"}
+        role="img"
+        aria-label="Stacked incident rates with repeat-rate overlay and rollout band."
+      >
+        {[0, 8, 16, 24, 32, 40].map((tick) => {
+          const y = incidentScaleY(tick);
+          return (
+            <g key={`incident-grid-${variant}-${tick}`}>
+              <line
+                x1={incidentPadding.left}
+                y1={y}
+                x2={incidentWidth - incidentPadding.right}
+                y2={y}
+                stroke="rgba(255,255,255,0.14)"
+                strokeDasharray="3 6"
+              />
+              <text
+                x={incidentPadding.left - 10}
+                y={y + 4}
+                textAnchor="end"
+                fill="rgba(255,255,255,0.72)"
+                fontSize="12"
+                fontWeight="700"
+              >
+                {tick}
+              </text>
+            </g>
+          );
+        })}
+
+        <RolloutBand
+          x={incidentRollout.start}
+          width={incidentRollout.end - incidentRollout.start}
+          y={incidentPadding.top}
+          height={incidentPlotHeight}
+          label="Attestiva rollout"
+        />
+
+        <line
+          x1={incidentPadding.left}
+          y1={severeThresholdY}
+          x2={incidentWidth - incidentPadding.right}
+          y2={severeThresholdY}
+          stroke="rgba(255,125,125,0.8)"
+          strokeDasharray="6 6"
+        />
+        <text
+          x={incidentWidth - incidentPadding.right - 3}
+          y={severeThresholdY - 8}
+          textAnchor="end"
+          fill="rgba(255,175,175,0.92)"
+          fontSize="11"
+          fontWeight="700"
+        >
+          Risk tolerance line
+        </text>
+
+        {incidentWindow.map((row, index) => {
+          const xCenter = incidentPadding.left + index * incidentStep + incidentStep / 2;
+
+          const nearTop = row.nearMissRate;
+          const lowTop = nearTop + row.lowRate;
+          const mediumTop = lowTop + row.mediumRate;
+          const severeTop = mediumTop + row.severeRate;
+
+          const nearY = incidentScaleY(nearTop);
+          const lowY = incidentScaleY(lowTop);
+          const mediumY = incidentScaleY(mediumTop);
+          const severeY = incidentScaleY(severeTop);
+          const baseY = incidentScaleY(0);
+
+          return (
+            <g key={`incident-${variant}-${row.month}`}>
+              <rect
+                x={xCenter - incidentBarWidth / 2}
+                y={nearY}
+                width={incidentBarWidth}
+                height={baseY - nearY}
+                fill="rgba(255,255,255,0.2)"
+                rx={4}
+                className="cursor-pointer"
+                data-drill="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (variant !== "card") return;
+                  openDrawer(`Near-miss detail: ${row.month}`, "incident");
+                }}
+              />
+              <rect
+                x={xCenter - incidentBarWidth / 2}
+                y={lowY}
+                width={incidentBarWidth}
+                height={nearY - lowY}
+                fill="rgba(0,211,127,0.72)"
+                className="cursor-pointer"
+                data-drill="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (variant !== "card") return;
+                  openDrawer(`Low severity detail: ${row.month}`, "incident");
+                }}
+              />
+              <rect
+                x={xCenter - incidentBarWidth / 2}
+                y={mediumY}
+                width={incidentBarWidth}
+                height={lowY - mediumY}
+                fill="rgba(214,255,10,0.88)"
+                className="cursor-pointer"
+                data-drill="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (variant !== "card") return;
+                  openDrawer(`Medium severity detail: ${row.month}`, "incident");
+                }}
+              />
+              <rect
+                x={xCenter - incidentBarWidth / 2}
+                y={severeY}
+                width={incidentBarWidth}
+                height={mediumY - severeY}
+                fill="rgba(255,74,92,0.96)"
+                className="cursor-pointer"
+                data-drill="true"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (variant !== "card") return;
+                  openDrawer(`Severe detail: ${row.month}`, "incident");
+                }}
+              />
+
+              <text
+                x={xCenter}
+                y={incidentHeight - 14}
+                textAnchor="middle"
+                fill="rgba(255,255,255,0.83)"
+                fontSize="12"
+                fontWeight="700"
+              >
+                {row.month}
+              </text>
+            </g>
+          );
+        })}
+
+        <path
+          d={repeatPath}
+          fill="none"
+          stroke="rgba(255,179,141,0.95)"
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+
+        {repeatPoints.map((point) => (
+          <circle
+            key={`repeat-${variant}-${point.label}`}
+            cx={point.x}
+            cy={point.y}
+            r={4.5}
+            fill="#ffb38d"
+            stroke="#101315"
+            strokeWidth={2}
+            className="cursor-pointer"
+            data-drill="true"
+            onClick={(event) => {
+              event.stopPropagation();
+              if (variant !== "card") return;
+              openDrawer(`Repeat rate detail: ${point.label}`, "incident");
+            }}
+          />
+        ))}
+
+        {repeatPoints[repeatPoints.length - 1] && (
+          <text
+            x={repeatPoints[repeatPoints.length - 1].x + 10}
+            y={clamp(
+              repeatPoints[repeatPoints.length - 1].y - 8,
+              incidentPadding.top + 12,
+              incidentHeight - incidentPadding.bottom - 6
+            )}
+            fill="rgba(255,179,141,0.98)"
+            fontSize="12"
+            fontWeight="800"
+          >
+            Repeat rate
+          </text>
+        )}
+
+        {incidentOctPoint && (
+          <AnnotationCallout
+            x={incidentOctPoint.x}
+            y={incidentOctPoint.y}
+            lines={["Understanding verified +", "manager escalation enabled"]}
+            width={226}
+          />
+        )}
+
+        <text
+          x={16}
+          y={incidentPadding.top + incidentPlotHeight / 2}
+          transform={`rotate(-90 16 ${incidentPadding.top + incidentPlotHeight / 2})`}
+          fill="rgba(255,255,255,0.75)"
+          fontSize="12"
+          fontWeight="700"
+        >
+          Incidents / 10,000 work hours
+        </text>
+        <text
+          x={incidentWidth - 10}
+          y={incidentPadding.top + incidentPlotHeight / 2}
+          transform={`rotate(90 ${incidentWidth - 10} ${incidentPadding.top + incidentPlotHeight / 2})`}
+          fill="rgba(255,179,141,0.92)"
+          fontSize="12"
+          fontWeight="700"
+        >
+          Repeat rate (%)
+        </text>
+        <text
+          x={incidentPadding.left + incidentPlotWidth / 2}
+          y={incidentHeight - 6}
+          textAnchor="middle"
+          fill="rgba(255,255,255,0.75)"
+          fontSize="12"
+          fontWeight="700"
+        >
+          Month
+        </text>
+      </svg>
+    );
+  };
 
   return (
     <section className="relative overflow-hidden bg-[radial-gradient(circle_at_8%_10%,rgba(214,255,10,0.2)_0%,transparent_44%),radial-gradient(circle_at_88%_82%,rgba(0,211,127,0.16)_0%,transparent_42%),linear-gradient(180deg,#0F1112_0%,#161A1C_56%,#101315_100%)] py-24 md:py-28">
       <div className="pointer-events-none absolute -top-16 left-8 h-56 w-56 rounded-full bg-[var(--color-accent)]/15 blur-3xl" />
       <div className="pointer-events-none absolute -bottom-20 right-6 h-72 w-72 rounded-full bg-[var(--color-accent-2)]/15 blur-3xl" />
-
-      {tooltip.visible && (
-        <div
-          className="pointer-events-none fixed z-[60] max-w-[260px] rounded-xl border border-white/20 bg-black/85 px-3 py-2 text-xs font-semibold text-white"
-          style={{ left: tooltip.x, top: tooltip.y }}
-        >
-          {tooltip.text}
-        </div>
-      )}
 
       <div className="mx-auto max-w-screen-xl px-6">
         <motion.div
@@ -531,35 +1068,38 @@ export function ComplianceImpactChartsSection() {
               Compliance Signal Center
             </p>
             <h3 className="mt-5 font-display text-4xl font-black leading-[1.05] tracking-tight text-white md:text-6xl">
-              Easy implementation.
+              Verified understanding first.
               <br />
               <AccentHighlight mode="inView" delay={0.15}>
-                Satisifying results.
+                Risk drops where it matters.
               </AccentHighlight>
             </h3>
             <p className="mt-4 text-lg font-semibold leading-relaxed text-white/85 md:text-2xl">
-              Switch between risk and efficiency stories without losing filter context.
+              The story management wants to hear, with leading and lagging indicators in one view.
             </p>
           </div>
 
           <div className="mt-10 rounded-3xl border border-white/20 bg-black/35 p-4 md:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
               <div className="inline-flex w-full rounded-full border border-white/20 bg-white/5 p-1 lg:w-auto">
-                {menuItems.map((item) => {
+                {[
+                  { id: "risk", label: "Risk Posture", Icon: ShieldAlert },
+                  { id: "efficiency", label: "Operational Efficiency", Icon: Activity },
+                ].map((item) => {
                   const isActive = item.id === activeView;
                   return (
                     <button
                       key={item.id}
                       type="button"
-                      onClick={item.onSelect}
+                      onClick={() => setActiveView(item.id as ActiveView)}
                       className={`relative inline-flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-bold transition-colors md:px-6 ${
-                        isActive ? "text-[#1A1A1A]" : "text-white/82 hover:text-white"
+                        isActive ? activeTabClass : inactiveTabClass
                       }`}
                     >
                       {isActive && (
                         <motion.span
-                          layoutId="active-menu-pill"
-                          className="absolute inset-0 rounded-full bg-[var(--color-accent)]"
+                          layoutId="active-dashboard-tab"
+                          className="absolute inset-0 rounded-full bg-[var(--color-accent)] shadow-[0_0_28px_rgba(214,255,10,0.35)]"
                           transition={{ duration: 0.35, ease: [0.23, 1, 0.32, 1] }}
                         />
                       )}
@@ -570,77 +1110,49 @@ export function ComplianceImpactChartsSection() {
                 })}
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 text-sm font-semibold text-white/85">
-                <Filter className="h-4 w-4" />
-                {drillFilter && (
-                  <span className="rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/15 px-3 py-1 text-[var(--color-accent)]">
-                    Drill-down: {drillFilter}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/5 p-1">
+                  {(["30d", "90d", "365d", "custom"] as DateRange[]).map((range) => {
+                    const active = range === dateRange;
+                    return (
+                      <button
+                        key={range}
+                        type="button"
+                        onClick={() => setDateRange(range)}
+                        className={`rounded-full px-3.5 py-1.5 text-xs font-bold uppercase tracking-[0.08em] transition-colors ${
+                          active
+                            ? "bg-[var(--color-accent)] text-[#1A1A1A]"
+                            : "text-white/80 hover:bg-white/10 hover:text-white"
+                        }`}
+                      >
+                        {range}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <label className="group flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4">
+                  <span className="inline-flex items-center gap-1 text-xs font-bold uppercase tracking-[0.1em] text-white/70">
+                    <CalendarDays className="h-3.5 w-3.5" />
+                    Org/Facility
                   </span>
-                )}
-                {hasActiveFilter && (
-                  <button
-                    type="button"
-                    onClick={clearAllFilters}
-                    className="inline-flex items-center gap-1 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-white hover:bg-white/15"
+                  <select
+                    value={facility}
+                    onChange={(event) => setFacility(event.target.value as Facility)}
+                    className="bg-transparent py-2.5 pr-1 text-xs font-bold uppercase tracking-[0.08em] text-white outline-none"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    Reset filters
-                  </button>
-                )}
+                    {Object.entries(facilityLabels).map(([value, label]) => (
+                      <option key={value} value={value} className="bg-[#171A1D] text-white">
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="h-3.5 w-3.5 text-white/60" />
+                </label>
               </div>
             </div>
 
-            <div className="mt-4 grid gap-3 md:grid-cols-[auto,1fr,1fr]">
-              <div className="flex gap-2">
-                {(["90d", "365d"] as DateRange[]).map((range) => {
-                  const isSelected = range === dateRange;
-                  return (
-                    <button
-                      key={range}
-                      type="button"
-                      onClick={() => setDateRange(range)}
-                      className={`rounded-full px-3.5 py-2 text-sm font-bold transition-colors ${
-                        isSelected
-                          ? "bg-[var(--color-accent)] text-[#1A1A1A]"
-                          : "bg-white/10 text-white/85 hover:bg-white/15"
-                      }`}
-                    >
-                      {range === "90d" ? "90d" : "365d"}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <label className="group flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4">
-                <span className="text-sm font-bold text-white/70">Org</span>
-                <select
-                  value={orgUnit}
-                  onChange={(event) => setOrgUnit(event.target.value as OrgUnit)}
-                  className="w-full bg-transparent py-2.5 text-sm font-semibold text-white outline-none"
-                >
-                  {Object.entries(orgLabels).map(([value, label]) => (
-                    <option key={value} value={value} className="bg-[#171A1D]">
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="group flex items-center gap-2 rounded-full border border-white/20 bg-white/5 px-4">
-                <span className="text-sm font-bold text-white/70">Framework</span>
-                <select
-                  value={framework}
-                  onChange={(event) => setFramework(event.target.value as Framework)}
-                  className="w-full bg-transparent py-2.5 text-sm font-semibold text-white outline-none"
-                >
-                  {Object.entries(frameworkLabels).map(([value, label]) => (
-                    <option key={value} value={value} className="bg-[#171A1D]">
-                      {label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
+            <p className="mt-3 text-xs font-semibold text-white/60">Example metrics (illustrative).</p>
           </div>
 
           <AnimatePresence mode="wait">
@@ -651,459 +1163,131 @@ export function ComplianceImpactChartsSection() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -14 }}
                 transition={{ duration: 0.42, ease: "easeOut" }}
-                className="mt-8"
+                className="mt-8 grid gap-6 lg:grid-cols-2"
               >
-                <div className="grid gap-4 md:grid-cols-3">
-                  {riskKpis.map((kpi) => (
+                <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h4 className="font-display text-[1.7rem] font-black leading-tight text-white">
+                        Audit gaps fall when understanding is verified.
+                      </h4>
+                      <p className="mt-2 text-sm font-semibold text-white/78 md:text-base">
+                        After Attestiva rollout, open gaps drop and evidence stays current.
+                      </p>
+                    </div>
+                    <div className="inline-flex rounded-full border border-white/20 bg-white/5 p-1">
+                      <button
+                        type="button"
+                        onClick={() => setAuditMetricView("gaps")}
+                        className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] ${
+                          auditMetricView === "gaps"
+                            ? "bg-[var(--color-accent)] text-[#131313]"
+                            : "text-white/70 hover:text-white"
+                        }`}
+                      >
+                        Open gaps
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setAuditMetricView("readiness")}
+                        className={`rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] ${
+                          auditMetricView === "readiness"
+                            ? "bg-[var(--color-accent)] text-[#131313]"
+                            : "text-white/70 hover:text-white"
+                        }`}
+                      >
+                        Readiness index
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    {riskKpiLeft.map((chip) => (
+                      <KpiChip
+                        key={chip.label}
+                        from={chip.from}
+                        to={chip.to}
+                        label={chip.label}
+                        delta={chip.delta}
+                        tone={chip.tone}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-white/15 bg-[#111518]/90 p-4">
                     <div
-                      key={kpi.label}
-                      className="rounded-2xl border border-white/20 bg-black/30 p-5"
+                      className="cursor-zoom-in rounded-xl transition-transform duration-300 hover:scale-[1.01]"
+                      onClick={maybeOpenExpandedChart("audit")}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openExpandedChart("audit");
+                        }
+                      }}
+                      aria-label="Expand audit risk chart"
                     >
-                      <p className="text-sm font-bold uppercase tracking-wide text-white/65">{kpi.label}</p>
-                      <p className="mt-2 font-display text-4xl font-black text-[var(--color-accent)]">{kpi.value}</p>
-                      <p className="mt-2 text-sm font-semibold text-white/72">{kpi.subtext}</p>
+                      {renderAuditChart("card")}
                     </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                  <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
-                    <h4 className="font-display text-2xl font-black text-white md:text-[2rem]">
-                      The story management wants to hear.
-                    </h4>
-                    <p className="mt-2 text-sm font-semibold text-white/75 md:text-base">
-                      {dateRange === "365d"
-                        ? "Across the full year, open audit gaps keep falling and evidence stays current after implementation."
-                        : "Open audit gaps are dropping and evidence is staying current before the next cycle."}
+                    <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.11em] text-white/55">
+                      Click chart to expand
                     </p>
+                  </div>
 
-                    <div className="mt-4 rounded-2xl border border-white/15 bg-[#121518]/85 p-4">
-                      <svg
-                        viewBox={`0 0 ${lineChartWidth} ${lineChartHeight}`}
-                        className="h-[250px] w-full"
-                        role="img"
-                        aria-label="Audit readiness burn-down chart showing a steep drop in open gaps over time."
-                      >
-                        <defs>
-                          <linearGradient id="lineGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#D6FF0A" />
-                            <stop offset="100%" stopColor="#00D37F" />
-                          </linearGradient>
-                          <linearGradient id="areaFill" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="rgba(0,211,127,0.42)" />
-                            <stop offset="100%" stopColor="rgba(0,211,127,0.04)" />
-                          </linearGradient>
-                        </defs>
-
-                        {[0, 20, 40, 60, 80, 100].map((tick) => {
-                          const y =
-                            linePadding.top +
-                            ((lineMax - tick) / (lineMax - lineMin)) * linePlotHeight;
-                          return (
-                            <g key={tick}>
-                              <line
-                                x1={linePadding.left}
-                                y1={y}
-                                x2={lineChartWidth - linePadding.right}
-                                y2={y}
-                                stroke="rgba(255,255,255,0.15)"
-                                strokeDasharray="4 6"
-                              />
-                              <text
-                                x={linePadding.left - 10}
-                                y={y + 4}
-                                textAnchor="end"
-                                fill="rgba(255,255,255,0.7)"
-                                fontSize="12"
-                                fontWeight="700"
-                              >
-                                {tick}
-                              </text>
-                            </g>
-                          );
-                        })}
-
-                        {burnDownAreaPath && (
-                          <motion.path
-                            key={`area-${dateRange}`}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 0.65, ease: "easeOut" }}
-                            d={burnDownAreaPath}
-                            fill="url(#areaFill)"
-                          />
-                        )}
-                        <motion.path
-                          key={`pre-line-${dateRange}`}
-                          initial={{ pathLength: 0 }}
-                          animate={{ pathLength: 1 }}
-                          transition={{ duration: 0.5, ease: "easeOut" }}
-                          d={preImplementationPath}
-                          fill="none"
-                          stroke="rgba(255,122,122,0.96)"
-                          strokeWidth="5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <motion.path
-                          key={`post-line-${dateRange}`}
-                          initial={{ pathLength: 0 }}
-                          animate={{ pathLength: 1 }}
-                          transition={{
-                            duration: dateRange === "365d" ? 0.95 : 0.8,
-                            delay: 0.14,
-                            ease: "easeOut",
-                          }}
-                          d={postImplementationPath}
-                          fill="none"
-                          stroke="url(#lineGlow)"
-                          strokeWidth="5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-
-                        {auditAnnotationPoint && (
-                          <>
-                            <line
-                              x1={auditAnnotationPoint.x}
-                              y1={linePadding.top}
-                              x2={auditAnnotationPoint.x}
-                              y2={lineChartHeight - linePadding.bottom}
-                              stroke="rgba(214,255,10,0.88)"
-                              strokeDasharray="3 6"
-                            />
-                            <text
-                              x={auditAnnotationPoint.x + 10}
-                              y={linePadding.top + 12}
-                              fill="#D6FF0A"
-                              fontSize="16"
-                              fontWeight="900"
-                            >
-                              Attestiva Layer
-                            </text>
-                          </>
-                        )}
-
-                        {burnDownPoints.map((point, index) => (
-                          <g key={`audit-${point.label}`}>
-                            <motion.circle
-                              key={`audit-point-${dateRange}-${point.label}`}
-                              initial={{ scale: 0 }}
-                              animate={{ scale: 1 }}
-                              transition={{ duration: 0.32, delay: 0.1 + index * 0.05 }}
-                              cx={point.x}
-                              cy={point.y}
-                              r={index === implementationPointIndex || index === burnDownPoints.length - 1 ? 6.8 : 5.8}
-                              fill={point.phase === "pre" ? "#FF8A65" : "#D6FF0A"}
-                              stroke="#101315"
-                              strokeWidth={2}
-                              className="cursor-pointer"
-                              onMouseMove={(event) =>
-                                showTooltip(
-                                  event,
-                                  `${point.label}: ${point.value} open gaps in the ${dateRangeLabels[dateRange].toLowerCase()} view. Click to inspect the control mix.`
-                                )
-                              }
-                              onMouseLeave={hideTooltip}
-                              onClick={() => {
-                                setDrillFilter(`Audit month: ${point.label}`);
-                                openInsight({
-                                  title: `${point.label} was an inflection point for audit readiness.`,
-                                  detail:
-                                    "Automation tightened evidence freshness and reduced open findings across critical controls.",
-                                  drivers: [
-                                    "Control ownership response times improved by 29%.",
-                                    "Expired evidence queue dropped sharply after auto-capture was enabled.",
-                                    "High-severity findings are now concentrated in fewer control families.",
-                                  ],
-                                  actions: [
-                                    "Expand auto-capture to remaining high-impact controls.",
-                                    "Run weekly owner checkpoints for controls with aging evidence.",
-                                    "Escalate unresolved high-risk findings within 72 hours.",
-                                  ],
-                                });
-                              }}
-                            />
-                            <text
-                              x={point.x}
-                              y={lineChartHeight - 12}
-                              textAnchor="middle"
-                              fill="rgba(255,255,255,0.82)"
-                              fontSize="12"
-                              fontWeight="700"
-                            >
-                              {point.label}
-                            </text>
-                          </g>
-                        ))}
-                      </svg>
-                    </div>
-                  </article>
-
-                  <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
-                    <h4 className="font-display text-2xl font-black text-white md:text-[2rem]">
-                      Severe incidents and repeats are decreasing, and recurrence is being contained.
-                    </h4>
-                    <p className="mt-2 text-sm font-semibold text-white/75 md:text-base">
-                      Why it matters: Fewer severe repeats indicates control fixes are sticking, not just being logged.
-                    </p>
-
-                    <div className="mt-4 rounded-2xl border border-white/15 bg-[#121518]/85 p-4">
-                      <svg
-                        viewBox={`0 0 ${incidentWidth} ${incidentHeight}`}
-                        className="h-[260px] w-full"
-                        role="img"
-                        aria-label="Stacked incident severity bars with repeat incident trend line."
-                      >
-                        {[0, 10, 20, 30, 40, 50].map((tick) => {
-                          const y = incidentScaleY(tick);
-                          return (
-                            <g key={tick}>
-                              <line
-                                x1={incidentPadding.left}
-                                y1={y}
-                                x2={incidentWidth - incidentPadding.right}
-                                y2={y}
-                                stroke="rgba(255,255,255,0.14)"
-                                strokeDasharray="4 6"
-                              />
-                              <text
-                                x={incidentPadding.left - 10}
-                                y={y + 4}
-                                textAnchor="end"
-                                fill="rgba(255,255,255,0.68)"
-                                fontSize="12"
-                                fontWeight="700"
-                              >
-                                {tick}
-                              </text>
-                            </g>
-                          );
-                        })}
-
-                        <motion.path
-                          initial={{ pathLength: 0 }}
-                          whileInView={{ pathLength: 1 }}
-                          viewport={{ once: true, amount: 0.3 }}
-                          transition={{ duration: 0.9, delay: 0.1, ease: "easeOut" }}
-                          d={repeatPath}
-                          fill="none"
-                          stroke="#FF8A65"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-
-                        <line
-                          x1={incidentAnnotationX}
-                          y1={incidentPadding.top}
-                          x2={incidentAnnotationX}
-                          y2={incidentHeight - incidentPadding.bottom}
-                          stroke="rgba(214,255,10,0.85)"
-                          strokeDasharray="3 6"
-                        />
-                        <text
-                          x={incidentAnnotationX + 8}
-                          y={incidentPadding.top + 14}
-                          fill="#D6FF0A"
-                          fontSize="12"
-                          fontWeight="800"
-                        >
-                          New policy training pushed
-                        </text>
-
-                        {incidentsSeries.map((item, index) => {
-                          const xCenter =
-                            incidentPadding.left + index * incidentStep + incidentStep / 2;
-                          const lowY = incidentScaleY(item.low);
-                          const mediumY = incidentScaleY(item.low + item.medium);
-                          const highY = incidentScaleY(item.low + item.medium + item.high);
-                          const baseY = incidentScaleY(0);
-                          const isHighFocused = drillFilter === null || drillFilter.includes("High");
-                          const isMediumFocused = drillFilter === null || drillFilter.includes("Medium");
-                          const isLowFocused = drillFilter === null || drillFilter.includes("Low");
-
-                          return (
-                            <g key={`incidents-${months[index]}`}>
-                              <motion.rect
-                                initial={{ height: 0, y: baseY }}
-                                whileInView={{ height: baseY - lowY, y: lowY }}
-                                viewport={{ once: true, amount: 0.3 }}
-                                transition={{ duration: 0.45, delay: index * 0.04 }}
-                                x={xCenter - incidentBarWidth / 2}
-                                width={incidentBarWidth}
-                                rx={4}
-                                fill="rgba(0,211,127,0.72)"
-                                opacity={isLowFocused ? 1 : 0.32}
-                                className="cursor-pointer"
-                                onMouseMove={(event) =>
-                                  showTooltip(
-                                    event,
-                                    `${months[index]} low-severity incidents: ${item.low}. Click to filter low severity drivers.`
-                                  )
-                                }
-                                onMouseLeave={hideTooltip}
-                                onClick={() => {
-                                  setDrillFilter("Severity: Low");
-                                  openInsight({
-                                    title: "Low-severity volume is declining and remains manageable.",
-                                    detail:
-                                      "Low-severity incidents still account for most volume, but trend direction is improving steadily.",
-                                    drivers: [
-                                      "Policy reminders are reducing repeat low-impact process misses.",
-                                      "Evidence recency checks are catching issues earlier.",
-                                      "Owner follow-up compliance improved after automated nudges.",
-                                    ],
-                                    actions: [
-                                      "Keep low-severity triage in weekly cadence.",
-                                      "Promote recurring low-severity patterns into preventive training.",
-                                      "Track controls that generate repeated low-severity alerts.",
-                                    ],
-                                  });
-                                }}
-                              />
-                              <motion.rect
-                                initial={{ height: 0, y: baseY }}
-                                whileInView={{ height: lowY - mediumY, y: mediumY }}
-                                viewport={{ once: true, amount: 0.3 }}
-                                transition={{ duration: 0.45, delay: 0.08 + index * 0.04 }}
-                                x={xCenter - incidentBarWidth / 2}
-                                width={incidentBarWidth}
-                                fill="rgba(214,255,10,0.88)"
-                                opacity={isMediumFocused ? 1 : 0.32}
-                                className="cursor-pointer"
-                                onMouseMove={(event) =>
-                                  showTooltip(
-                                    event,
-                                    `${months[index]} medium-severity incidents: ${item.medium}. Click to filter medium severity drivers.`
-                                  )
-                                }
-                                onMouseLeave={hideTooltip}
-                                onClick={() => {
-                                  setDrillFilter("Severity: Medium");
-                                  openInsight({
-                                    title: "Medium-severity incidents are dropping with stronger policy reinforcement.",
-                                    detail:
-                                      "Most medium-severity events tie to delayed remediation and can be reduced with tighter owner accountability.",
-                                    drivers: [
-                                      "SLA adherence improved after weekly remediation scorecards.",
-                                      "Repeat policy misconceptions declined post-training refresh.",
-                                      "Vendor remediation response times are stabilizing.",
-                                    ],
-                                    actions: [
-                                      "Automate follow-up reminders at day 7 and day 14.",
-                                      "Require remediation plans for unresolved medium-severity issues.",
-                                      "Add manager-level visibility for aging medium-severity incidents.",
-                                    ],
-                                  });
-                                }}
-                              />
-                              <motion.rect
-                                initial={{ height: 0, y: baseY }}
-                                whileInView={{ height: mediumY - highY, y: highY }}
-                                viewport={{ once: true, amount: 0.3 }}
-                                transition={{ duration: 0.45, delay: 0.15 + index * 0.04 }}
-                                x={xCenter - incidentBarWidth / 2}
-                                width={incidentBarWidth}
-                                fill="rgba(255,122,122,0.92)"
-                                opacity={isHighFocused ? 1 : 0.32}
-                                className="cursor-pointer"
-                                onMouseMove={(event) =>
-                                  showTooltip(
-                                    event,
-                                    `${months[index]} high-severity incidents: ${item.high}. Click for high-risk driver analysis.`
-                                  )
-                                }
-                                onMouseLeave={hideTooltip}
-                                onClick={() => {
-                                  setDrillFilter("Severity: High");
-                                  openInsight({
-                                    title: "High-severity incident recurrence is narrowing to a few control gaps.",
-                                    detail:
-                                      "The remaining high-severity repeats are concentrated, making targeted control hardening the fastest lever.",
-                                    drivers: [
-                                      "Two access-control families account for most remaining high severity events.",
-                                      "Third-party evidence lag is correlated with high-severity repeats.",
-                                      "Escalation delays still appear in one enterprise workflow.",
-                                    ],
-                                    actions: [
-                                      "Run focused access-control remediation sprint this month.",
-                                      "Require critical vendors to meet monthly evidence cadence.",
-                                      "Route unresolved high severity incidents to executive review in 48 hours.",
-                                    ],
-                                  });
-                                }}
-                              />
-
-                              <motion.circle
-                                initial={{ scale: 0 }}
-                                whileInView={{ scale: 1 }}
-                                viewport={{ once: true, amount: 0.3 }}
-                                transition={{ duration: 0.3, delay: 0.16 + index * 0.04 }}
-                                cx={xCenter}
-                                cy={incidentScaleY(item.repeat)}
-                                r={4.5}
-                                fill="#FF8A65"
-                                stroke="#101315"
-                                strokeWidth={2}
-                                className="cursor-pointer"
-                                onMouseMove={(event) =>
-                                  showTooltip(
-                                    event,
-                                    `${months[index]} repeat incidents: ${item.repeat}. Click to open recurrence actions.`
-                                  )
-                                }
-                                onMouseLeave={hideTooltip}
-                                onClick={() => {
-                                  setDrillFilter(`Repeat incidents: ${months[index]}`);
-                                  openInsight({
-                                    title: "Repeat incident trend confirms control reinforcement is working.",
-                                    detail:
-                                      "Repeat patterns are falling, but recurrence remains elevated in a small subset of controls.",
-                                    drivers: [
-                                      "Training refresh reduced repeat policy errors.",
-                                      "Exception approvals are now tracked with tighter thresholds.",
-                                      "Evidence freshness checks prevent stale controls from drifting.",
-                                    ],
-                                    actions: [
-                                      "Trigger targeted coaching for repeat-heavy teams.",
-                                      "Set stricter alert thresholds for recurrence-prone controls.",
-                                      "Review exception approvals every two weeks with control owners.",
-                                    ],
-                                  });
-                                }}
-                              />
-
-                              <text
-                                x={xCenter}
-                                y={incidentHeight - 12}
-                                textAnchor="middle"
-                                fill="rgba(255,255,255,0.82)"
-                                fontSize="12"
-                                fontWeight="700"
-                              >
-                                {months[index]}
-                              </text>
-                            </g>
-                          );
-                        })}
-                      </svg>
-                    </div>
-                  </article>
-                </div>
-
-                <div className="mt-7 rounded-2xl border border-white/20 bg-black/30 p-5 md:flex md:items-center md:justify-between">
-                  <p className="text-base font-semibold text-white/85">
-                    Want to see what&apos;s driving this change?
+                  <p className="mt-3 text-sm font-semibold text-white/83">
+                    What changed: comprehension checks + manager follow-ups.
                   </p>
-                  <button
-                    type="button"
-                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#1A1A1A] transition-colors hover:bg-[#e4ff43] md:mt-0"
-                  >
-                    See Attestiva in Action
-                    <PlayCircle className="h-4 w-4" />
-                  </button>
-                </div>
+                </article>
+
+                <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
+                  <div>
+                    <h4 className="font-display text-[1.7rem] font-black leading-tight text-white">
+                      Severe events drop—and repeats stop repeating.
+                    </h4>
+                    <p className="mt-2 text-sm font-semibold text-white/78 md:text-base">
+                      Repeat rate falls first; severe incidents follow within 60 days.
+                    </p>
+                  </div>
+
+                  <div className="mt-4 flex flex-wrap items-center gap-3">
+                    {riskKpiRight.map((chip) => (
+                      <KpiChip
+                        key={chip.label}
+                        from={chip.from}
+                        to={chip.to}
+                        label={chip.label}
+                        delta={chip.delta}
+                        tone={chip.tone}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-white/15 bg-[#111518]/90 p-4">
+                    <div
+                      className="cursor-zoom-in rounded-xl transition-transform duration-300 hover:scale-[1.01]"
+                      onClick={maybeOpenExpandedChart("incident")}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          openExpandedChart("incident");
+                        }
+                      }}
+                      aria-label="Expand incident trend chart"
+                    >
+                      {renderIncidentChart("card")}
+                    </div>
+                    <p className="mt-2 text-[11px] font-bold uppercase tracking-[0.11em] text-white/55">
+                      Click chart to expand
+                    </p>
+                  </div>
+
+                  <p className="mt-3 text-sm font-semibold text-white/83">
+                    What changed: scenario-based checks + coaching loop.
+                  </p>
+                </article>
               </motion.div>
             ) : (
               <motion.div
@@ -1112,413 +1296,342 @@ export function ComplianceImpactChartsSection() {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -14 }}
                 transition={{ duration: 0.42, ease: "easeOut" }}
-                className="mt-8"
+                className="mt-8 grid gap-6 lg:grid-cols-2"
               >
-                <div className="grid gap-4 md:grid-cols-3">
-                  {efficiencyKpis.map((kpi) => (
-                    <div
-                      key={kpi.label}
-                      className="rounded-2xl border border-white/20 bg-black/30 p-5"
-                    >
-                      <p className="text-sm font-bold uppercase tracking-wide text-white/65">{kpi.label}</p>
-                      <p className="mt-2 font-display text-4xl font-black text-[var(--color-accent-2)]">{kpi.value}</p>
-                      <p className="mt-2 text-sm font-semibold text-white/72">{kpi.subtext}</p>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 grid gap-6 lg:grid-cols-2">
-                  <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
-                    <h4 className="font-display text-2xl font-black text-white md:text-[2rem]">
-                      Time-to-close is shrinking, including the long tail.
+                <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
+                  <div>
+                    <h4 className="font-display text-[1.7rem] font-black leading-tight text-white">
+                      Time-to-close compression is holding across the tail.
                     </h4>
-                    <p className="mt-2 text-sm font-semibold text-white/75 md:text-base">
-                      Why it matters: Faster closure with a tighter tail means less operational drag and fewer stuck findings.
+                    <p className="mt-2 text-sm font-semibold text-white/78 md:text-base">
+                      Escalation and ownership clarity pull down median and 90th percentile closure time.
                     </p>
+                  </div>
 
-                    <div className="mt-4 rounded-2xl border border-white/15 bg-[#121518]/85 p-4">
-                      <svg
-                        viewBox={`0 0 ${distributionWidth} ${distributionHeight}`}
-                        className="h-[250px] w-full"
-                        role="img"
-                        aria-label="Before and after distribution for time-to-close findings."
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {efficiencyKpisA.map((chip) => (
+                      <KpiChip
+                        key={chip.label}
+                        from={chip.from}
+                        to={chip.to}
+                        label={chip.label}
+                        delta={chip.delta}
+                        tone={chip.tone}
+                      />
+                    ))}
+                  </div>
+
+                  <div className="mt-4 rounded-2xl border border-white/15 bg-[#111518]/90 p-4">
+                    <svg viewBox={`0 0 ${closeWidth} ${closeHeight}`} className="h-[260px] w-full" role="img" aria-label="Before and after time-to-close distribution.">
+                      {[0, 20, 40, 60, 80].map((tick) => {
+                        const y = closeScaleY(tick);
+                        return (
+                          <g key={`close-grid-${tick}`}>
+                            <line
+                              x1={closePadding.left}
+                              y1={y}
+                              x2={closeWidth - closePadding.right}
+                              y2={y}
+                              stroke="rgba(255,255,255,0.14)"
+                              strokeDasharray="3 6"
+                            />
+                            <text
+                              x={closePadding.left - 10}
+                              y={y + 4}
+                              textAnchor="end"
+                              fill="rgba(255,255,255,0.72)"
+                              fontSize="12"
+                              fontWeight="700"
+                            >
+                              {tick}
+                            </text>
+                          </g>
+                        );
+                      })}
+
+                      {timeToCloseData.map((bucket, index) => {
+                        const centerX = closePadding.left + index * closeStep + closeStep / 2;
+                        const beforeHeight = closeScaleY(0) - closeScaleY(bucket.before);
+                        const afterHeight = closeScaleY(0) - closeScaleY(bucket.after);
+                        return (
+                          <g key={bucket.bucket}>
+                            <rect
+                              x={centerX - 36}
+                              y={closeScaleY(bucket.before)}
+                              width={24}
+                              height={beforeHeight}
+                              rx={6}
+                              fill="rgba(255,255,255,0.45)"
+                              className="cursor-pointer"
+                              onClick={() => openDrawer(`Before rollout: ${bucket.bucket}`, "efficiency")}
+                            />
+                            <rect
+                              x={centerX + 10}
+                              y={closeScaleY(bucket.after)}
+                              width={24}
+                              height={afterHeight}
+                              rx={6}
+                              fill="rgba(0,211,127,0.9)"
+                              className="cursor-pointer"
+                              onClick={() => openDrawer(`After rollout: ${bucket.bucket}`, "efficiency")}
+                            />
+                            <text
+                              x={centerX}
+                              y={closeHeight - 14}
+                              textAnchor="middle"
+                              fill="rgba(255,255,255,0.83)"
+                              fontSize="12"
+                              fontWeight="700"
+                            >
+                              {bucket.bucket}
+                            </text>
+                          </g>
+                        );
+                      })}
+
+                      <text
+                        x={16}
+                        y={closePadding.top + closePlotHeight / 2}
+                        transform={`rotate(-90 16 ${closePadding.top + closePlotHeight / 2})`}
+                        fill="rgba(255,255,255,0.75)"
+                        fontSize="12"
+                        fontWeight="700"
                       >
-                        {[0, 20, 40, 60, 80, 100].map((tick) => {
-                          const y = distributionScaleY(tick);
-                          return (
-                            <g key={tick}>
-                              <line
-                                x1={distributionPadding.left}
-                                y1={y}
-                                x2={distributionWidth - distributionPadding.right}
-                                y2={y}
-                                stroke="rgba(255,255,255,0.14)"
-                                strokeDasharray="4 6"
-                              />
-                              <text
-                                x={distributionPadding.left - 10}
-                                y={y + 4}
-                                textAnchor="end"
-                                fill="rgba(255,255,255,0.68)"
-                                fontSize="12"
-                                fontWeight="700"
-                              >
-                                {tick}
-                              </text>
-                            </g>
-                          );
-                        })}
+                        Days to close (#)
+                      </text>
+                    </svg>
+                  </div>
+                </article>
 
-                        <line
-                          x1={distributionAnnotationX}
-                          y1={distributionPadding.top}
-                          x2={distributionAnnotationX}
-                          y2={distributionHeight - distributionPadding.bottom}
-                          stroke="rgba(214,255,10,0.86)"
-                          strokeDasharray="3 6"
-                        />
-                        <text
-                          x={distributionAnnotationX + 8}
-                          y={distributionPadding.top + 14}
-                          fill="#D6FF0A"
-                          fontSize="12"
-                          fontWeight="800"
-                        >
-                          SLA + owner escalation launched
-                        </text>
-
-                        {timeToCloseSeries.map((bucket, index) => {
-                          const centerX =
-                            distributionPadding.left + index * distributionStep + distributionStep / 2;
-                          const beforeHeight = distributionScaleY(0) - distributionScaleY(bucket.before);
-                          const afterHeight = distributionScaleY(0) - distributionScaleY(bucket.after);
-                          const leftBarX = centerX - 34;
-                          const rightBarX = centerX + 8;
-
-                          return (
-                            <g key={bucket.bucket}>
-                              <motion.rect
-                                initial={{ height: 0, y: distributionScaleY(0) }}
-                                whileInView={{ height: beforeHeight, y: distributionScaleY(bucket.before) }}
-                                viewport={{ once: true, amount: 0.35 }}
-                                transition={{ duration: 0.5, delay: index * 0.08 }}
-                                x={leftBarX}
-                                width={24}
-                                rx={6}
-                                fill="rgba(255,255,255,0.44)"
-                                className="cursor-pointer"
-                                onMouseMove={(event) =>
-                                  showTooltip(
-                                    event,
-                                    `${bucket.bucket} before rollout: ${bucket.before} days. Click to inspect pre-rollout friction.`
-                                  )
-                                }
-                                onMouseLeave={hideTooltip}
-                                onClick={() => {
-                                  setDrillFilter(`Pre-rollout ${bucket.bucket}`);
-                                  openInsight({
-                                    title: `Pre-rollout ${bucket.bucket} time highlights legacy process drag.`,
-                                    detail:
-                                      "Legacy closure cadence relied on manual coordination and delayed owner handoffs.",
-                                    drivers: [
-                                      "Manual evidence requests created scheduling bottlenecks.",
-                                      "Remediation ownership was not consistently visible.",
-                                      "Escalation criteria were uneven across teams.",
-                                    ],
-                                    actions: [
-                                      "Standardize owner assignment and escalation windows.",
-                                      "Automate reminders for open findings after day 7.",
-                                      "Set monthly review cadence for the slowest closure cohorts.",
-                                    ],
-                                  });
-                                }}
-                              />
-
-                              <motion.rect
-                                initial={{ height: 0, y: distributionScaleY(0) }}
-                                whileInView={{ height: afterHeight, y: distributionScaleY(bucket.after) }}
-                                viewport={{ once: true, amount: 0.35 }}
-                                transition={{ duration: 0.5, delay: 0.06 + index * 0.08 }}
-                                x={rightBarX}
-                                width={24}
-                                rx={6}
-                                fill="rgba(0,211,127,0.92)"
-                                className="cursor-pointer"
-                                onMouseMove={(event) =>
-                                  showTooltip(
-                                    event,
-                                    `${bucket.bucket} after rollout: ${bucket.after} days. Click to inspect the gains.`
-                                  )
-                                }
-                                onMouseLeave={hideTooltip}
-                                onClick={() => {
-                                  setDrillFilter(`Post-rollout ${bucket.bucket}`);
-                                  openInsight({
-                                    title: `Post-rollout ${bucket.bucket} shows sustained remediation acceleration.`,
-                                    detail:
-                                      "Automation and clearer ownership have materially reduced closure times across the distribution.",
-                                    drivers: [
-                                      "Evidence handoff is now automated for critical controls.",
-                                      "Owner response SLAs are measured and enforced.",
-                                      "Recurrence prevention has reduced re-opened findings.",
-                                    ],
-                                    actions: [
-                                      "Expand SLA reporting to every control owner.",
-                                      "Keep weekly remediation standups for aging findings.",
-                                      "Tie closure metrics to quarterly operational targets.",
-                                    ],
-                                  });
-                                }}
-                              />
-
-                              <text
-                                x={centerX}
-                                y={distributionHeight - 12}
-                                textAnchor="middle"
-                                fill="rgba(255,255,255,0.82)"
-                                fontSize="12"
-                                fontWeight="700"
-                              >
-                                {bucket.bucket}
-                              </text>
-                            </g>
-                          );
-                        })}
-                      </svg>
-                    </div>
-                  </article>
-
-                  <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
-                    <h4 className="font-display text-2xl font-black text-white md:text-[2rem]">
-                      Estimated compliance costs are dropping through targeted improvements.
+                <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
+                  <div>
+                    <h4 className="font-display text-[1.7rem] font-black leading-tight text-white">
+                      Cost avoidance scales as rework and repeats shrink.
                     </h4>
-                    <p className="mt-2 text-sm font-semibold text-white/75 md:text-base">
-                      Why it matters: This turns compliance gains into conservative financial impact leadership can track.
+                    <p className="mt-2 text-sm font-semibold text-white/78 md:text-base">
+                      Conservative savings assumptions still show strong improvement after rollout.
                     </p>
+                  </div>
 
-                    <div className="mt-4 rounded-2xl border border-white/15 bg-[#121518]/85 p-4">
-                      <svg
-                        viewBox={`0 0 ${waterfallWidth} ${waterfallHeight}`}
-                        className="h-[270px] w-full"
-                        role="img"
-                        aria-label="Waterfall chart for estimated compliance and incident cost avoidance."
-                      >
-                        {[0, 100, 200, 300, 400, 500, 600, 700].map((tick) => {
-                          const y = waterfallScaleY(tick);
-                          return (
-                            <g key={tick}>
-                              <line
-                                x1={waterfallPadding.left}
-                                y1={y}
-                                x2={waterfallWidth - waterfallPadding.right}
-                                y2={y}
-                                stroke="rgba(255,255,255,0.14)"
-                                strokeDasharray="4 6"
-                              />
-                              <text
-                                x={waterfallPadding.left - 10}
-                                y={y + 4}
-                                textAnchor="end"
-                                fill="rgba(255,255,255,0.68)"
-                                fontSize="12"
-                                fontWeight="700"
-                              >
-                                {tick}
-                              </text>
-                            </g>
-                          );
-                        })}
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    {efficiencyKpisB.map((chip) => (
+                      <KpiChip
+                        key={chip.label}
+                        from={chip.from}
+                        to={chip.to}
+                        label={chip.label}
+                        delta={chip.delta}
+                        tone={chip.tone}
+                      />
+                    ))}
+                  </div>
 
-                        {waterfallPoints.map((point, index) => {
-                          const xCenter =
-                            waterfallPadding.left + index * waterfallStep + waterfallStep / 2;
-                          const lower = Math.min(point.from, point.to);
-                          const upper = Math.max(point.from, point.to);
-                          const y = waterfallScaleY(upper);
-                          const h = Math.max(waterfallScaleY(lower) - y, 8);
-                          const fill =
-                            point.kind === "start"
-                              ? "rgba(255,138,101,0.9)"
-                              : point.kind === "current"
-                              ? "rgba(0,211,127,0.9)"
-                              : "rgba(214,255,10,0.92)";
+                  <div className="mt-4 rounded-2xl border border-white/15 bg-[#111518]/90 p-4">
+                    <svg viewBox={`0 0 ${costWidth} ${costHeight}`} className="h-[278px] w-full" role="img" aria-label="Cost avoidance waterfall chart.">
+                      {[0, 100, 200, 300, 400, 500, 600, 700].map((tick) => {
+                        const y = costScaleY(tick);
+                        return (
+                          <g key={`cost-grid-${tick}`}>
+                            <line
+                              x1={costPadding.left}
+                              y1={y}
+                              x2={costWidth - costPadding.right}
+                              y2={y}
+                              stroke="rgba(255,255,255,0.14)"
+                              strokeDasharray="3 6"
+                            />
+                            <text
+                              x={costPadding.left - 10}
+                              y={y + 4}
+                              textAnchor="end"
+                              fill="rgba(255,255,255,0.72)"
+                              fontSize="12"
+                              fontWeight="700"
+                            >
+                              {tick}
+                            </text>
+                          </g>
+                        );
+                      })}
 
-                          return (
-                            <g key={point.id}>
-                              {index < waterfallPoints.length - 1 && (
-                                <line
-                                  x1={xCenter + waterfallBarWidth / 2}
-                                  y1={waterfallScaleY(point.cumulativeAfter)}
-                                  x2={xCenter + waterfallStep - waterfallBarWidth / 2}
-                                  y2={waterfallScaleY(point.cumulativeAfter)}
-                                  stroke="rgba(255,255,255,0.5)"
-                                  strokeWidth="1.5"
-                                />
-                              )}
+                      {costData.map((point, index) => {
+                        const xCenter = costPadding.left + index * costStep + costStep / 2;
+                        const isBaseline = point.kind === "base";
+                        const isCurrent = point.kind === "result";
 
-                              <motion.rect
-                                initial={{ height: 0, y: waterfallScaleY(0) }}
-                                whileInView={{ height: h, y }}
-                                viewport={{ once: true, amount: 0.3 }}
-                                transition={{ duration: 0.5, delay: 0.08 + index * 0.08 }}
-                                x={xCenter - waterfallBarWidth / 2}
-                                width={waterfallBarWidth}
-                                rx={9}
-                                fill={fill}
-                                className="cursor-pointer"
-                                onMouseMove={(event) =>
-                                  showTooltip(
-                                    event,
-                                    `${point.label}: ${point.valueLabel}. Click for cost driver detail and action plan.`
-                                  )
-                                }
-                                onMouseLeave={hideTooltip}
-                                onClick={() => {
-                                  setDrillFilter(`Cost driver: ${point.label}`);
-                                  openInsight({
-                                    title: `${point.label} is materially contributing to cost avoidance.`,
-                                    detail:
-                                      "Estimated savings are conservative and based on user-provided labor and incident cost assumptions.",
-                                    drivers: [
-                                      "Audit preparation hours continue to decline with automation coverage.",
-                                      "External advisory and evidence packaging effort is reduced.",
-                                      "Repeat incident effort drops as recurrence trends down.",
-                                    ],
-                                    actions: [
-                                      "Validate hourly rate assumptions each quarter.",
-                                      "Publish cost-avoidance trend by control family.",
-                                      "Expand automation to high-effort evidence workflows.",
-                                    ],
-                                  });
-                                }}
-                              />
+                        let from = 0;
+                        let to = point.value;
+                        if (point.kind === "delta") {
+                          const prior = costData.slice(0, index).reduce((sum, row) => sum + row.value, 0);
+                          from = prior + point.value;
+                          to = prior;
+                        }
 
-                              <text
-                                x={xCenter}
-                                y={y - 8}
-                                textAnchor="middle"
-                                fill={point.kind === "delta" ? "#D6FF0A" : "#FFFFFF"}
-                                fontSize="12"
-                                fontWeight="800"
-                              >
-                                {point.valueLabel}
-                              </text>
+                        const y = costScaleY(Math.max(from, to));
+                        const h = Math.max(Math.abs(costScaleY(from) - costScaleY(to)), 8);
+                        const fill = isBaseline
+                          ? "rgba(255,138,101,0.92)"
+                          : isCurrent
+                          ? "rgba(0,211,127,0.92)"
+                          : "rgba(214,255,10,0.92)";
 
-                              <text
-                                x={xCenter}
-                                y={waterfallHeight - 24}
-                                textAnchor="middle"
-                                fill="rgba(255,255,255,0.82)"
-                                fontSize="11"
-                                fontWeight="700"
-                              >
-                                {point.label}
-                              </text>
-                            </g>
-                          );
-                        })}
-
-                        <text
-                          x={waterfallPadding.left + 8}
-                          y={waterfallPadding.top + 14}
-                          fill="#D6FF0A"
-                          fontSize="12"
-                          fontWeight="800"
-                        >
-                          Vendor review cadence tightened
-                        </text>
-                      </svg>
-                    </div>
-
-                    <p className="mt-3 text-xs font-semibold text-white/65">
-                      Estimates based on user-provided hourly rates and incident cost assumptions.
-                    </p>
-                    <p className="mt-1 text-sm font-semibold text-white/80">
-                      Current estimated cost footprint: <span className="text-[var(--color-accent-2)]">${currentCost}k</span>.
-                    </p>
-                  </article>
-                </div>
-
-                <div className="mt-7 rounded-2xl border border-white/20 bg-black/30 p-5 md:flex md:items-center md:justify-between">
-                  <p className="text-base font-semibold text-white/85">
-                    Want to see what&apos;s driving this change?
-                  </p>
-                  <button
-                    type="button"
-                    className="mt-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-accent-2)] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#0E1113] transition-colors hover:bg-[#31e39a] md:mt-0"
-                  >
-                    Generate an executive summary
-                    <DollarSign className="h-4 w-4" />
-                  </button>
-                </div>
+                        return (
+                          <g key={point.label}>
+                            <rect
+                              x={xCenter - costBarWidth / 2}
+                              y={y}
+                              width={costBarWidth}
+                              height={h}
+                              rx={8}
+                              fill={fill}
+                              className="cursor-pointer"
+                              onClick={() => openDrawer(`Cost driver: ${point.label}`, "efficiency")}
+                            />
+                            <text
+                              x={xCenter}
+                              y={y - 8}
+                              textAnchor="middle"
+                              fill={point.kind === "delta" ? "#D6FF0A" : "#FFFFFF"}
+                              fontSize="12"
+                              fontWeight="800"
+                            >
+                              {point.kind === "delta" ? `${point.value}k` : `$${point.value}k`}
+                            </text>
+                            <text
+                              x={xCenter}
+                              y={costHeight - 24}
+                              textAnchor="middle"
+                              fill="rgba(255,255,255,0.82)"
+                              fontSize="11"
+                              fontWeight="700"
+                            >
+                              {point.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </svg>
+                  </div>
+                </article>
               </motion.div>
             )}
           </AnimatePresence>
-
-          <motion.aside
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, amount: 0.2 }}
-            transition={{ duration: 0.55, ease: "easeOut" }}
-            className="mt-8 rounded-3xl border border-white/20 bg-black/35 p-6"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h5 className="font-display text-2xl font-black text-white">
-                Top drivers and recommended next actions
-              </h5>
-              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-white/80">
-                {activeView === "risk" ? "Risk Posture" : "Operational Efficiency"}
-              </span>
-            </div>
-            <p className="mt-3 text-lg font-bold text-[var(--color-accent)]">{activeInsight.title}</p>
-            <p className="mt-2 text-sm font-semibold leading-relaxed text-white/80">{activeInsight.detail}</p>
-
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-white/60">Top Drivers</p>
-                <ul className="mt-2 space-y-2">
-                  {activeInsight.drivers.map((driver) => (
-                    <li key={driver} className="text-sm font-semibold text-white/85">
-                      - {driver}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-[0.12em] text-white/60">
-                  Recommended Next Actions
-                </p>
-                <ul className="mt-2 space-y-2">
-                  {activeInsight.actions.map((action) => (
-                    <li key={action} className="text-sm font-semibold text-white/85">
-                      - {action}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <span className="rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-accent)]/15 px-3 py-1 text-xs font-bold text-[var(--color-accent)]">
-                {dateRangeLabels[dateRange]}
-              </span>
-              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-white/85">
-                {orgLabels[orgUnit]}
-              </span>
-              <span className="rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-white/85">
-                {frameworkLabels[framework]}
-              </span>
-              <button
-                type="button"
-                className="inline-flex items-center gap-1 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold text-white/85 hover:bg-white/15"
-              >
-                <Clock3 className="h-3.5 w-3.5" />
-                Share insight summary
-              </button>
-            </div>
-          </motion.aside>
         </motion.div>
       </div>
+
+      <AnimatePresence>
+        {expandedChart && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.28 }}
+            className="fixed inset-0 z-[70] bg-black/80 p-3 backdrop-blur-sm md:p-6"
+            onClick={closeExpandedChart}
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ duration: 0.32, ease: [0.23, 1, 0.32, 1] }}
+              className="mx-auto flex h-full w-full max-w-[1300px] flex-col rounded-[1.8rem] border border-white/20 bg-[#0f1418]/95 p-4 shadow-[0_24px_70px_rgba(0,0,0,0.6)] md:p-6"
+              role="dialog"
+              aria-modal="true"
+              aria-label={expandedChart === "audit" ? "Expanded audit risk chart" : "Expanded incident trend chart"}
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                    Expanded chart view
+                  </p>
+                  <h5 className="mt-1 font-display text-3xl font-black text-white md:text-4xl">
+                    {expandedChart === "audit" ? "Audit Risk Trend" : "Incident Trend"}
+                  </h5>
+                  <p className="mt-1 text-sm font-semibold text-white/72 md:text-base">
+                    {expandedChart === "audit"
+                      ? "Current filters and readiness view are preserved."
+                      : "Current filters and severity mix are preserved."}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={closeExpandedChart}
+                  className="inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-4 py-2 text-xs font-black uppercase tracking-[0.1em] text-[#111] shadow-[0_0_24px_rgba(214,255,10,0.42)] transition-all hover:bg-[#e4ff43]"
+                >
+                  Close
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <div className="mt-4 flex-1 overflow-hidden rounded-2xl border border-white/15 bg-[#111518]/95 p-3 md:p-5">
+                {expandedChart === "audit" ? renderAuditChart("expanded") : renderIncidentChart("expanded")}
+              </div>
+
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.1em] text-white/55">
+                Press Esc or click outside to close
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {drawer && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="fixed inset-0 z-40 bg-black/55"
+              onClick={() => setDrawer(null)}
+            />
+            <motion.aside
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
+              className="fixed right-0 top-0 z-50 h-full w-full max-w-md border-l border-white/20 bg-[#0f1418]/95 p-6 backdrop-blur-2xl"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.12em] text-[var(--color-accent)]">Detail panel</p>
+                  <h5 className="mt-1 font-display text-3xl font-black text-white">Top drivers</h5>
+                  <p className="mt-2 text-sm font-semibold text-white/76">{drawer.context}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDrawer(null)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-white/10 text-white hover:bg-white/15"
+                  aria-label="Close drawer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <ul className="mt-6 space-y-3">
+                {drawer.drivers.map((driver) => (
+                  <li key={driver} className="rounded-xl border border-white/12 bg-white/5 px-4 py-3 text-sm font-semibold text-white/88">
+                    - {driver}
+                  </li>
+                ))}
+              </ul>
+
+              <button
+                type="button"
+                className="mt-6 inline-flex items-center justify-center rounded-full bg-[var(--color-accent)] px-5 py-3 text-sm font-black uppercase tracking-[0.09em] text-[#111] transition-colors hover:bg-[#e4ff43]"
+              >
+                Generate exec summary
+              </button>
+
+              <p className="mt-4 text-xs font-semibold text-white/55">
+                Active filters: {dateRange} | {facilityLabels[facility]}
+              </p>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
     </section>
   );
 }
