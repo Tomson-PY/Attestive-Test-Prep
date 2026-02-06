@@ -5,6 +5,7 @@ import { TestimonialSection } from "@/components/sections/TestimonialSection";
 import { ComprehensionLiftSection } from "@/components/sections/ComprehensionLiftSection";
 import LegalHandOffSectionA from "@/components/sections/LegalHandOffSectionA";
 import { ComplianceImpactChartsSection } from "@/components/sections/ComplianceImpactChartsSection";
+import { ChartStyleExamplesSection } from "@/components/sections/ChartStyleExamplesSection";
 import { PoweredByRiata } from "@/components/PoweredByRiata";
 import { PricingSection } from "@/components/PricingSection";
 import { Footer } from "@/components/Footer";
@@ -20,6 +21,7 @@ export default function Home() {
         <ComprehensionLiftSection />
         <LegalHandOffSectionA />
         <ComplianceImpactChartsSection />
+        <ChartStyleExamplesSection />
         <PoweredByRiata />
         <PricingSection />
       </div>

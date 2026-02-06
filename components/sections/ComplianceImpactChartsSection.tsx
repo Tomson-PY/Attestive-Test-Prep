@@ -4,10 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useMemo, useState, type MouseEvent } from "react";
 import {
   Activity,
-  AlertTriangle,
   Clock3,
   DollarSign,
   Filter,
+  PlayCircle,
   RotateCcw,
   ShieldAlert,
   Sparkles,
@@ -404,30 +404,38 @@ export function ComplianceImpactChartsSection() {
 
   const lineChartWidth = 620;
   const lineChartHeight = 280;
-  const linePadding = { top: 22, right: 18, bottom: 42, left: 44 };
+  const linePadding = { top: 22, right: 18, bottom: 36, left: 44 };
   const linePlotWidth = lineChartWidth - linePadding.left - linePadding.right;
   const linePlotHeight = lineChartHeight - linePadding.top - linePadding.bottom;
-  const lineMax = Math.max(...burnDownSeries, ...evidenceSeries, 100);
+  const lineMax = 100;
   const lineMin = 0;
-
-  const burnDownPoints = burnDownSeries.map((value, index) => {
-    const x = linePadding.left + (index / Math.max(burnDownSeries.length - 1, 1)) * linePlotWidth;
-    const y = linePadding.top + ((lineMax - value) / (lineMax - lineMin)) * linePlotHeight;
-    return { label: months[index], x, y, value };
+  const managementStorySeries = [
+    { label: "Jul", value: 72 },
+    { label: "Aug", value: 74 },
+    { label: "Sep", value: 80 },
+    { label: "Oct", value: 44 },
+    { label: "Nov", value: 28 },
+    { label: "Dec", value: 16 },
+  ];
+  const burnDownPoints = managementStorySeries.map((item, index) => {
+    const x =
+      linePadding.left +
+      (index / Math.max(managementStorySeries.length - 1, 1)) * linePlotWidth;
+    const y =
+      linePadding.top + ((lineMax - item.value) / (lineMax - lineMin)) * linePlotHeight;
+    return { label: item.label, x, y, value: item.value };
   });
 
-  const evidencePoints = evidenceSeries.map((value, index) => {
-    const x = linePadding.left + (index / Math.max(evidenceSeries.length - 1, 1)) * linePlotWidth;
-    const y = linePadding.top + ((lineMax - value) / (lineMax - lineMin)) * linePlotHeight;
-    return { label: months[index], x, y, value };
-  });
-
-  const burnDownPath = burnDownPoints
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
-  const evidencePath = evidencePoints
-    .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
-    .join(" ");
+  const pointsToPath = (points: Array<{ x: number; y: number }>) =>
+    points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  const burnDownPath = pointsToPath(burnDownPoints);
+  const preImplementationPath = pointsToPath(burnDownPoints.slice(0, 3));
+  const postImplementationPath = pointsToPath(burnDownPoints.slice(2));
+  const chartFloorY = lineChartHeight - linePadding.bottom;
+  const burnDownAreaPath =
+    burnDownPoints.length > 0
+      ? `${burnDownPath} L ${burnDownPoints[burnDownPoints.length - 1].x} ${chartFloorY} L ${burnDownPoints[0].x} ${chartFloorY} Z`
+      : "";
   const auditAnnotationIndex = Math.min(2, burnDownPoints.length - 1);
   const auditAnnotationPoint = burnDownPoints[auditAnnotationIndex];
 
@@ -639,10 +647,10 @@ export function ComplianceImpactChartsSection() {
                 <div className="mt-6 grid gap-6 lg:grid-cols-2">
                   <article className="rounded-3xl border border-white/20 bg-black/35 p-6">
                     <h4 className="font-display text-2xl font-black text-white md:text-[2rem]">
-                      Open audit gaps are dropping and evidence is staying current.
+                      The story management wants to hear.
                     </h4>
                     <p className="mt-2 text-sm font-semibold text-white/75 md:text-base">
-                      Why it matters: This is the cleanest signal that audit exposure is being reduced before the next cycle.
+                      Open audit gaps are dropping and evidence is staying current before the next cycle.
                     </p>
 
                     <div className="mt-4 rounded-2xl border border-white/15 bg-[#121518]/85 p-4">
@@ -650,12 +658,16 @@ export function ComplianceImpactChartsSection() {
                         viewBox={`0 0 ${lineChartWidth} ${lineChartHeight}`}
                         className="h-[250px] w-full"
                         role="img"
-                        aria-label="Line chart of open audit gaps and controls with current evidence over time."
+                        aria-label="Audit readiness burn-down chart showing a steep drop in open gaps over time."
                       >
                         <defs>
-                          <linearGradient id="auditLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <linearGradient id="lineGlow" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#D6FF0A" />
                             <stop offset="100%" stopColor="#00D37F" />
+                          </linearGradient>
+                          <linearGradient id="areaFill" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor="rgba(0,211,127,0.42)" />
+                            <stop offset="100%" stopColor="rgba(0,211,127,0.04)" />
                           </linearGradient>
                         </defs>
 
@@ -687,15 +699,25 @@ export function ComplianceImpactChartsSection() {
                           );
                         })}
 
+                        {burnDownAreaPath && (
+                          <motion.path
+                            initial={{ opacity: 0 }}
+                            whileInView={{ opacity: 1 }}
+                            viewport={{ once: true, amount: 0.3 }}
+                            transition={{ duration: 0.75, ease: "easeOut" }}
+                            d={burnDownAreaPath}
+                            fill="url(#areaFill)"
+                          />
+                        )}
                         <motion.path
                           initial={{ pathLength: 0 }}
                           whileInView={{ pathLength: 1 }}
                           viewport={{ once: true, amount: 0.3 }}
-                          transition={{ duration: 0.95, ease: "easeOut" }}
-                          d={burnDownPath}
+                          transition={{ duration: 0.55, ease: "easeOut" }}
+                          d={preImplementationPath}
                           fill="none"
-                          stroke="url(#auditLineGradient)"
-                          strokeWidth="4.5"
+                          stroke="rgba(255,122,122,0.96)"
+                          strokeWidth="5"
                           strokeLinecap="round"
                           strokeLinejoin="round"
                         />
@@ -703,13 +725,13 @@ export function ComplianceImpactChartsSection() {
                           initial={{ pathLength: 0 }}
                           whileInView={{ pathLength: 1 }}
                           viewport={{ once: true, amount: 0.3 }}
-                          transition={{ duration: 1.0, delay: 0.12, ease: "easeOut" }}
-                          d={evidencePath}
+                          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+                          d={postImplementationPath}
                           fill="none"
-                          stroke="rgba(255,255,255,0.72)"
-                          strokeWidth="3"
-                          strokeDasharray="8 7"
+                          stroke="url(#lineGlow)"
+                          strokeWidth="5"
                           strokeLinecap="round"
+                          strokeLinejoin="round"
                         />
 
                         {auditAnnotationPoint && (
@@ -724,12 +746,12 @@ export function ComplianceImpactChartsSection() {
                             />
                             <text
                               x={auditAnnotationPoint.x + 10}
-                              y={linePadding.top + 14}
+                              y={linePadding.top + 12}
                               fill="#D6FF0A"
-                              fontSize="12"
-                              fontWeight="800"
+                              fontSize="16"
+                              fontWeight="900"
                             >
-                              New evidence automation turned on
+                              Attestiva Layer
                             </text>
                           </>
                         )}
@@ -1050,8 +1072,8 @@ export function ComplianceImpactChartsSection() {
                     type="button"
                     className="mt-3 inline-flex items-center gap-2 rounded-full bg-[var(--color-accent)] px-6 py-3 text-sm font-black uppercase tracking-wide text-[#1A1A1A] transition-colors hover:bg-[#e4ff43] md:mt-0"
                   >
-                    Show recommended next actions
-                    <AlertTriangle className="h-4 w-4" />
+                    See Attestiva in Action
+                    <PlayCircle className="h-4 w-4" />
                   </button>
                 </div>
               </motion.div>
