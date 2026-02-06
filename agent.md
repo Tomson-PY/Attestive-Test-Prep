@@ -170,3 +170,13 @@ lsof -ti:3000 | xargs kill -9 2>/dev/null; npm run dev
 - Keep commits atomic and descriptive
 - Test changes before committing
 - Check `git status` to avoid committing unwanted files
+
+## Recent Maintenance Notes
+
+### Testimonial marquee stability (2026-02-06)
+- Issue observed: testimonial row could stop appearing to animate after navigating away from home (for example `/contact`) and returning via the logo link.
+- Current fix in `components/sections/TestimonialSection/index.tsx`:
+  - marquee rendering no longer depends on section `useScroll`/`useTransform` opacity-parallax coupling.
+  - marquee track uses `w-max` and `willChange: "transform"` to keep transform animation consistent.
+  - shared `layoutId` transitions were removed from duplicated testimonial cards/overlay to prevent motion state conflicts.
+- Current speed is set in `rowConfigs` with `duration: 40` (seconds). Adjust this value to speed up or slow down the loop.

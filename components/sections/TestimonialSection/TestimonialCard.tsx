@@ -27,11 +27,10 @@ function TestimonialCardComponent({
 }: TestimonialCardProps) {
   // _isExpanded is used by parent component for expanded state logic
   void _isExpanded;
-  const { id, name, role, industry, beforePhrase, boldedPhrase, afterPhrase, row } = testimonial;
+  const { name, role, industry, beforePhrase, boldedPhrase, afterPhrase, row } = testimonial;
 
   return (
     <motion.button
-      layoutId={`card-${id}`}
       onClick={onClick}
       whileHover={{ scale: 1.02, y: -4 }}
       whileTap={{ scale: 0.98 }}

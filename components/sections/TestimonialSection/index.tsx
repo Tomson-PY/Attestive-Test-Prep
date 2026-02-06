@@ -1,12 +1,9 @@
 "use client";
 
-import { useRef, useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   motion,
-  useScroll,
-  useTransform,
   AnimatePresence,
-  MotionValue,
 } from "framer-motion";
 import { Quote, X } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -15,14 +12,13 @@ import { TestimonialCard } from "./TestimonialCard";
 
 // Single row configuration (left to right)
 const rowConfigs = [
-  { direction: "right", duration: 25 },
+  { direction: "right", duration: 40 },
 ];
 
 interface MarqueeRowProps {
   cards: Testimonial[];
   direction: string;
   duration: number;
-  y: MotionValue<number>;
   isPaused: boolean;
   expandedCard: string | null;
   onCardClick: (id: string) => void;
@@ -58,21 +54,21 @@ function MarqueeRow({
   cards,
   direction,
   duration,
-  y,
   isPaused,
   expandedCard,
   onCardClick,
 }: MarqueeRowProps) {
   return (
-    <motion.div style={{ y }} className="relative overflow-hidden">
+    <div className="relative overflow-hidden">
       <div
         className={cn(
-          "flex",
+          "flex w-max",
           direction === "left" ? "animate-marquee-left" : "animate-marquee-right"
         )}
         style={{
           animationDuration: `${duration}s`,
           animationPlayState: isPaused ? "paused" : "running",
+          willChange: "transform",
         }}
       >
         {/* Render three identical sets for seamless infinite scroll */}
@@ -80,7 +76,7 @@ function MarqueeRow({
         <CardSet cards={cards} expandedCard={expandedCard} onCardClick={onCardClick} setIndex={1} />
         <CardSet cards={cards} expandedCard={expandedCard} onCardClick={onCardClick} setIndex={2} />
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -128,7 +124,6 @@ function ExpandedCardOverlay({ card, onClose }: ExpandedCardOverlayProps) {
 
       {/* Expanded Card */}
       <motion.div
-        layoutId={`card-${card.id}`}
         onClick={(e) => e.stopPropagation()}
         className={cn(
           "relative bg-white rounded-3xl p-8 sm:p-10",
@@ -212,21 +207,7 @@ function ExpandedCardOverlay({ card, onClose }: ExpandedCardOverlayProps) {
 }
 
 export function TestimonialSection() {
-  const sectionRef = useRef<HTMLElement>(null);
   const [expandedCard, setExpandedCard] = useState<string | null>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ["start end", "end start"],
-  });
-
-  // Section fade-in
-  const opacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
-
-  // Parallax for single row
-  const rowY = useTransform(scrollYProgress, [0, 1], [15, -15]);
-
-  const rowYValues = [rowY];
 
   // Single row displays all testimonials
   const rows = useMemo(
@@ -254,7 +235,6 @@ export function TestimonialSection() {
 
   return (
     <section
-      ref={sectionRef}
       aria-label="Customer testimonials"
       className="relative py-4 sm:py-6 md:py-8 overflow-hidden bg-gradient-to-b from-white via-slate-50/50 to-white"
     >
@@ -269,30 +249,26 @@ export function TestimonialSection() {
       />
 
       {/* Heading */}
-      <motion.div
-        style={{ opacity }}
-        className="max-w-6xl mx-auto px-6 mb-3"
-      >
+      <div className="max-w-6xl mx-auto px-6 mb-3">
         <h2 className="font-display font-black text-2xl sm:text-3xl text-black">
           Policy Headaches.
         </h2>
-      </motion.div>
+      </div>
 
       {/* Marquee Row */}
-      <motion.div style={{ opacity }} className="flex flex-col gap-4 sm:gap-5">
+      <div className="flex flex-col gap-4 sm:gap-5">
         {rows.map((rowCards, rowIndex) => (
           <MarqueeRow
             key={rowIndex}
             cards={rowCards}
             direction={rowConfigs[rowIndex].direction}
             duration={rowConfigs[rowIndex].duration}
-            y={rowYValues[rowIndex]}
             isPaused={isPaused}
             expandedCard={expandedCard}
             onCardClick={handleCardClick}
           />
         ))}
-      </motion.div>
+      </div>
 
       {/* Gradient overlays for smooth edge fade */}
       <div
