@@ -2,6 +2,13 @@
 
 This file provides guidance to AI agents (Cursor, Claude, etc.) when working with code in this repository.
 
+## Codex Skill Routing
+
+- Primary design skill for this repo: `$attestive-test-prep-section-designer`
+- Skill file path: `/Users/tomamon/.codex/skills/attestive-test-prep-section-designer/SKILL.md`
+- Keep this separate from the compliance skill (`attestiva-section-designer`) to avoid cross-project drift.
+
+
 ## Critical: Development Server Management
 
 **ALWAYS use this command to start the dev server:**
