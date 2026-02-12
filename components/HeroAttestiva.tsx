@@ -31,13 +31,13 @@ export function HeroAttestiva() {
             transition={{ duration: 0.7, ease: "easeOut" }}
             className="font-display font-extrabold text-5xl md:text-7xl lg:text-8xl tracking-tight leading-[1.05] mb-8 text-white"
           >
-            Stop guessing what to study.
+            Stop tracking checkboxes.
             <br />
             Start{" "}
             <AccentHighlight mode="animate" delay={1.0}>
-              verified
+              verifying
             </AccentHighlight>{" "}
-            test-day ready.
+            competence.
           </motion.h1>
 
           {/* Subhead */}
@@ -47,7 +47,7 @@ export function HeroAttestiva() {
             transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
             className="text-lg md:text-xl text-white/80 mb-12 max-w-2xl leading-relaxed"
           >
-            <AttestivaLogo className="text-[1.1em] text-white/80" /> pinpoints skill gaps, delivers focused tutoring, and proves readiness before test day for SAT, MCAT, and other high-stakes exams.
+            <AttestivaLogo className="text-[1.1em] text-white/80" /> is compliance layer that verifies comprehension—turning policy distribution into measurable, auditable understanding and competency, not just &quot;read & acknowledged receipt.&quot;
           </motion.p>
         </div>
       </div>
